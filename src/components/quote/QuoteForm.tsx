@@ -41,10 +41,46 @@ interface QuoteFormProps {
 
 // Internal component for the sticky preview wrapper
 const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
+    const handleDownloadHtmlPdf = async () => {
+        const element = document.getElementById('quote-preview-content');
+        if (!element) return;
+
+        try {
+            // Dynamic imports to avoid SSR issues
+            const { toPng } = await import('html-to-image');
+            const { jsPDF } = await import('jspdf');
+
+            // 1. Capture element as PNG with higher quality (scale: 2)
+            const dataUrl = await toPng(element, {
+                quality: 1.0,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff',
+                // Important: Ensure the element is fully rendered. html-to-image does this well with Noto Sans KR.
+            });
+
+            // 2. Create jsPDF instance (A4 size: 210mm x 297mm)
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // 3. Add the image to the PDF
+            // The image should fill the A4 page
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            // 4. Save the PDF
+            pdf.save(`견적서_${data.recipientName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+        } catch (error) {
+            console.error('Failed to generate PDF:', error);
+            alert('PDF 생성 중 오류가 발생했습니다.');
+        }
+    };
+
     // Map form values to Quote object structure expected by QuoteHTMLPreview
     const previewQuote: Quote & { items: QuoteItem[] } = useMemo(() => ({
         id: "preview",
-        quoteNo: "ES-2601-007-0007", // Mocking the target format
+        quoteNo: "PREVIEW-" + format(new Date(), 'yyMM'),
         recipientName: data.recipientName || "수신처 미입력",
         recipientContact: data.recipientContact || "",
         date: data.date || new Date(),
@@ -76,8 +112,15 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
                 <span className="font-semibold flex items-center text-sm">
                     <FileText className="mr-2 h-4 w-4" /> 실시간 미리보기 (HTML)
                 </span>
-                <div className="text-[10pt] text-muted-foreground italic">
-                    저장 후 PDF를 다운로드할 수 있습니다.
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadHtmlPdf}
+                        className="h-8 text-xs font-bold bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                    >
+                        HTML PDF 다운로드
+                    </Button>
                 </div>
             </div>
             <div className="flex-1 overflow-auto p-4 bg-gray-200 flex justify-center items-start">

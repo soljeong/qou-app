@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Quote, QuoteItem } from '@prisma/client';
 import { calculateItemSpans } from '@/lib/quote-utils';
 import { format } from 'date-fns';
@@ -9,7 +7,7 @@ interface QuoteHTMLPreviewProps {
     quote: Quote & { items: QuoteItem[], recipientContact?: string | null };
 }
 
-export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
+export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps>(({ quote }, ref) => {
     const itemSpans = calculateItemSpans(quote.items);
     const totalAmount = quote.items.reduce((sum, item) => sum + (item.amount || 0), 0);
     const discount = (quote as any).discount || 0;
@@ -18,7 +16,11 @@ export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
     const total = supplyPrice + vat;
 
     return (
-        <div className="bg-white p-[40px] shadow-lg w-[210mm] min-h-[297mm] mx-auto text-[10pt] font-['Noto_Sans_KR',_sans-serif] leading-relaxed text-black printable-area box-border">
+        <div
+            id="quote-preview-content"
+            ref={ref}
+            className="bg-white p-[40px] shadow-lg w-[210mm] min-h-[297mm] mx-auto text-[10pt] font-['Noto_Sans_KR',_sans-serif] leading-relaxed text-black printable-area box-border"
+        >
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
             `}</style>
@@ -166,4 +168,4 @@ export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
             </div>
         </div>
     );
-};
+});
