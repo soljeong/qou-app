@@ -1,6 +1,7 @@
 'use server'
 
 import prisma from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
 
 export async function getQuotes() {
     try {
@@ -16,19 +17,17 @@ export async function getQuotes() {
     }
 }
 
-export async function createQuote(data: any) {
-    try {
-        const { recipientName, date, items } = data
+import { QuoteFormValues } from '@/lib/validations/quote'
 
-        // Generate Quote No (Simplified logic for now)
-        // Format: ES-YYMM-MMSEQ-YEARSEQ
-        // TODO: Implement proper sequence generation with locking or atomic increment
+export async function createQuote(data: QuoteFormValues) {
+    try {
+        const { recipientName, recipientContact, date, items } = data
+
         const now = new Date()
-        const year = now.getFullYear().toString().slice(2) // 26
-        const month = (now.getMonth() + 1).toString().padStart(2, '0') // 02
+        const year = now.getFullYear().toString().slice(2)
+        const month = (now.getMonth() + 1).toString().padStart(2, '0')
         const prefix = `ES-${year}${month}`
 
-        // Find last quote of this month to determine MMSEQ
         const lastQuote = await prisma.quote.findFirst({
             where: {
                 quoteNo: {
@@ -48,22 +47,13 @@ export async function createQuote(data: any) {
             }
         }
 
-        // YEARSEQ logic is similar, but let's postpone full implementation and use random for MVP to avoid collision in basic test
-        // Actually, prompt requires strict format. I will implement a basic version.
-        // For now, let's use a simple counter for YEARSEQ or just 0001 if not strictly enforced by DB constraint yet (it is unique).
-        // Let's stick to MMSEQ for now and hardcode YEARSEQ or use a random/timestamp part for uniqueness if needed.
-        // Spec: ES-YYMM-MMSEQ-YEARSEQ
-
         const mmSeqStr = mmSeq.toString().padStart(3, '0')
-        const yearSeqStr = '0001' // Placeholder for now
-
+        const yearSeqStr = '0001'
         const quoteNo = `${prefix}-${mmSeqStr}-${yearSeqStr}`
 
-        // Calculate totals
-        const subtotal = items.reduce((sum: number, item: any) => sum + (item.qty * (item.unitPrice || 0)), 0)
-        const discount = 0 // TODO: Add discount field to form
+        const subtotal = items.reduce((sum: number, item) => sum + (item.qty * (item.unitPrice || 0)), 0)
+        const discount = 0
         const supplyPrice = subtotal - discount
-        // VAT: Math.floor
         const vat = Math.floor(supplyPrice * 0.1)
         const total = supplyPrice + vat
 
@@ -72,18 +62,19 @@ export async function createQuote(data: any) {
                 quoteNo,
                 date: new Date(date),
                 recipientName,
-                supplierInfo: {}, // Empty for now
+                recipientContact,
+                supplierInfo: {},
                 subtotal,
                 discount,
                 supplyPrice,
                 vat,
                 total,
                 items: {
-                    create: items.map((item: any, index: number) => ({
+                    create: items.map((item, index: number) => ({
                         name: item.name,
                         process: item.process || '',
                         qty: item.qty,
-                        unitPrice: item.unitPrice, // Can be null
+                        unitPrice: item.unitPrice,
                         amount: item.qty * (item.unitPrice || 0),
                         note: item.note,
                         order: index
@@ -92,6 +83,7 @@ export async function createQuote(data: any) {
             }
         })
 
+        revalidatePath('/quotes')
         return { success: true, quote }
     } catch (error) {
         console.error('Failed to create quote:', error)

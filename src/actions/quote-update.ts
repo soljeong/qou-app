@@ -1,13 +1,15 @@
 'use server'
 
 import prisma from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
+import { QuoteFormValues } from '@/lib/validations/quote'
 
-export async function updateQuote(id: string, data: any) {
+export async function updateQuote(id: string, data: QuoteFormValues) {
     try {
-        const { recipientName, date, items } = data
+        const { recipientName, recipientContact, date, items } = data
 
         // Calculate totals
-        const subtotal = items.reduce((sum: number, item: any) => sum + (item.qty * (item.unitPrice || 0)), 0)
+        const subtotal = items.reduce((sum: number, item) => sum + (item.qty * (item.unitPrice || 0)), 0)
         const discount = 0
         const supplyPrice = subtotal - discount
         const vat = Math.floor(supplyPrice * 0.1)
@@ -21,6 +23,7 @@ export async function updateQuote(id: string, data: any) {
                 data: {
                     date: new Date(date),
                     recipientName,
+                    recipientContact,
                     subtotal,
                     discount,
                     supplyPrice,
@@ -35,12 +38,9 @@ export async function updateQuote(id: string, data: any) {
             })
 
             // 3. Create new items
-            // Note: Creating many items one by one or createMany?
-            // createMany is efficient but let's stick to relation create for simplicity or map
-            // Actually createMany is better.
             if (items.length > 0) {
                 await tx.quoteItem.createMany({
-                    data: items.map((item: any, index: number) => ({
+                    data: items.map((item, index: number) => ({
                         quoteId: id,
                         name: item.name,
                         process: item.process || '',
@@ -54,6 +54,7 @@ export async function updateQuote(id: string, data: any) {
             }
         })
 
+        revalidatePath('/quotes')
         return { success: true }
     } catch (error) {
         console.error('Failed to update quote:', error)

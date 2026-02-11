@@ -21,7 +21,8 @@ model Quote {
   date        DateTime
   
   // Recipient Info
-  recipientName String
+  recipientName    String
+  recipientContact String? // Contact person (e.g., Bae Il-kwon Manager)
   
   // Supplier Info (JSON or separate table, keeping simple for now)
   supplierInfo Json

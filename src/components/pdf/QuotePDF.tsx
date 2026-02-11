@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/alt-text */
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
 import { Quote, QuoteItem } from '@prisma/client';
@@ -12,270 +11,305 @@ Font.register({
     ],
 });
 
-// Create styles
 const styles = StyleSheet.create({
     page: {
-        padding: 30, // 14mm is approx 40pt, but 30 is good margin
+        padding: 40,
         fontFamily: 'NotoSansKR',
-        fontSize: 10,
+        fontSize: 9,
         lineHeight: 1.4,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
+    // Top Right Quote No
+    quoteNo: {
+        position: 'absolute',
+        top: 40,
+        right: 40,
+        fontSize: 9,
+        fontWeight: 'bold',
+    },
+    titleContainer: {
+        marginTop: 10,
+        marginBottom: 30,
         alignItems: 'center',
     },
     title: {
-        fontSize: 24,
+        fontSize: 30,
         fontWeight: 'bold',
-        textAlign: 'center',
-        letterSpacing: 5,
-        flexGrow: 1,
-    }, // Quote No at top right
-    quoteNo: {
-        fontSize: 10,
-        position: 'absolute',
-        right: 0,
-        top: 0
+        letterSpacing: 20,
     },
-    infoSection: {
+    infoContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 20,
         borderWidth: 1,
+        borderStyle: 'solid',
         borderColor: '#000',
-        height: 120, // Fixed height for alignment
+        height: 120,
+        marginBottom: 20,
     },
-    infoLeft: {
-        width: '50%',
+    recipientBox: {
+        width: '45%',
         padding: 10,
         borderRightWidth: 1,
+        borderRightStyle: 'solid',
         borderRightColor: '#000',
-        flexDirection: 'column',
-        justifyContent: 'space-around',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    infoRight: {
-        width: '50%',
-        padding: 5,
-        // Add internal table for supplier info?
+    recipientName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 6,
+    },
+    supplierBox: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    supplierLabel: {
+        width: 30,
+        backgroundColor: '#f9f9f9',
+        borderRightWidth: 1,
+        borderRightStyle: 'solid',
+        borderRightColor: '#000',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    supplierInfo: {
+        flex: 1,
     },
     supplierRow: {
         flexDirection: 'row',
+        height: '20%',
         borderBottomWidth: 1,
-        borderBottomColor: '#ccc', // Lighter internal lines? Or black? Spec says table form
+        borderBottomStyle: 'solid',
+        borderBottomColor: '#000',
         alignItems: 'center',
-        height: 20,
+        paddingLeft: 8,
+    },
+    supplierLabelText: {
+        width: 60,
+        fontWeight: 'bold',
+        fontSize: 8.5,
     },
     table: {
-        display: 'flex',
-        width: 'auto',
-        borderStyle: 'solid',
-        borderWidth: 1,
-        borderRightWidth: 0,
-        borderBottomWidth: 0,
-    },
-    tableRow: {
-        margin: 'auto',
-        flexDirection: 'row',
-    },
-    tableCol: {
-        borderStyle: 'solid',
-        borderWidth: 1,
-        borderLeftWidth: 0,
-        borderTopWidth: 0,
-        padding: 5,
+        marginTop: 10,
     },
     tableHeader: {
-        backgroundColor: '#f0f0f0',
-        fontWeight: 'bold',
-        textAlign: 'center',
+        flexDirection: 'row',
+        backgroundColor: '#f5f5f5',
+        borderTopWidth: 1,
+        borderTopStyle: 'solid',
+        borderTopColor: '#000',
+        borderLeftWidth: 1,
+        borderLeftStyle: 'solid',
+        borderLeftColor: '#000',
+        height: 25,
+        alignItems: 'center',
     },
-    // Row merging styles
-    hiddenCell: {
-        color: 'transparent',
-        borderTopWidth: 0, // Make it look merged
-    }
+    tableRow: {
+        flexDirection: 'row',
+        borderLeftWidth: 1,
+        borderLeftStyle: 'solid',
+        borderLeftColor: '#000',
+        minHeight: 30,
+    },
+    tableCell: {
+        borderRightWidth: 1,
+        borderRightStyle: 'solid',
+        borderRightColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: '#000',
+        padding: 4,
+        justifyContent: 'center',
+    },
+    footerContainer: {
+        marginTop: 20,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    totalsTable: {
+        width: '40%',
+        borderTopWidth: 1,
+        borderTopStyle: 'solid',
+        borderTopColor: '#000',
+        borderLeftWidth: 1,
+        borderLeftStyle: 'solid',
+        borderLeftColor: '#000',
+    },
+    totalsRow: {
+        flexDirection: 'row',
+        height: 20,
+        alignItems: 'center',
+    },
+    totalsLabel: {
+        width: '50%',
+        backgroundColor: '#f9f9f9',
+        borderRightWidth: 1,
+        borderRightStyle: 'solid',
+        borderRightColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: '#000',
+        padding: 3,
+        fontWeight: 'bold',
+        fontSize: 8.5,
+    },
+    totalsValue: {
+        width: '50%',
+        borderRightWidth: 1,
+        borderRightStyle: 'solid',
+        borderRightColor: '#000',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: '#000',
+        padding: 3,
+        textAlign: 'right',
+        fontSize: 8.5,
+    },
 });
 
-interface QuotePDFProps {
-    quote: Quote & { items: QuoteItem[] };
-}
+import { calculateItemSpans } from '@/lib/quote-utils';
 
-// Helper to pre-process items for row spanning
-const processItems = (items: QuoteItem[]) => {
-    const spans = new Array(items.length).fill(1).map(() => ({ rowSpan: 1, isFirst: true }));
-
-    // This is for visual merging. 
-    // In react-pdf, we can't easily do 'rowspan' like HTML table.
-    // We have to simulate it by not drawing the bottom border for the first N-1 rows,
-    // and not drawing the content for the subsequent rows.
-    // Actually, 'borderTop' of the NEXT row should be removed, or borderBottom of CURRENT.
-
-    // Let's analyze names
-    for (let i = 0; i < items.length; i++) {
-        if (i > 0 && items[i].name === items[i - 1].name) {
-            spans[i].isFirst = false;
-            spans[i].rowSpan = 0; // Means hidden
-
-            // Increment span of the first one
-            let ptr = i - 1;
-            while (ptr >= 0 && !spans[ptr].isFirst) ptr--;
-            spans[ptr].rowSpan++;
-        }
-    }
-    return spans;
-};
-
-export const QuotePDF = ({ quote }: QuotePDFProps) => {
-    const itemSpans = processItems(quote.items);
+export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recipientContact?: string | null } }) => {
+    const itemSpans = calculateItemSpans(quote.items);
     const totalAmount = quote.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0);
     const vat = Math.floor(totalAmount * 0.1);
     const total = totalAmount + vat;
 
     return (
-        <Document>
+        <Document title={`견적서_${quote.recipientName}`}>
             <Page size="A4" style={styles.page}>
+                <Text style={styles.quoteNo}>NO. {quote.quoteNo}</Text>
 
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.quoteNo}>NO. {quote.quoteNo}</Text>
-                    <View style={{ width: '100%', alignItems: 'center', marginTop: 10 }}>
-                        <Text style={styles.title}>견  적  서</Text>
-                    </View>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.title}>견 적 서</Text>
                 </View>
 
-                {/* Info Section - Left: Recipient, Right: Supplier */}
-                <View style={styles.infoSection}>
-                    <View style={styles.infoLeft}>
-                        <Text style={{ fontSize: 16 }}>{quote.recipientName} 귀하</Text>
-                        <Text>견적일: {new Date(quote.date).toLocaleDateString()}</Text>
-                        <Text>아래와 같이 견적합니다.</Text>
+                {/* Recipient & Supplier Info */}
+                <View style={styles.infoContainer}>
+                    <View style={styles.recipientBox}>
+                        <Text style={styles.recipientName}>{quote.recipientName}</Text>
+                        <Text style={{ fontSize: 11, marginBottom: 4 }}>
+                            {quote.recipientContact ? `${quote.recipientContact} 귀하` : '귀하'}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: '#333' }}>
+                            {`${new Date(quote.date).getFullYear()}. ${new Date(quote.date).getMonth() + 1}. ${new Date(quote.date).getDate()}.`}
+                        </Text>
+                        <Text style={{ fontSize: 10, marginTop: 4 }}>아래와 같이 견적합니다.</Text>
                     </View>
-                    <View style={styles.infoRight}>
-                        {/* Supplier Table Simulation */}
-                        <View style={{ flexDirection: 'row', height: '100%' }}>
-                            <View style={{ width: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee', borderRightWidth: 1 }}>
-                                <Text style={{ width: 10 }}>공급자</Text>
+
+                    <View style={styles.supplierBox}>
+                        <View style={styles.supplierLabel}>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold' }}>공</Text>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', marginTop: 4 }}>급</Text>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', marginTop: 4 }}>자</Text>
+                        </View>
+                        <View style={styles.supplierInfo}>
+                            <View style={styles.supplierRow}>
+                                <Text style={styles.supplierLabelText}>등록번호</Text>
+                                <Text style={{ fontSize: 11, fontWeight: 'bold' }}>137-81-30557</Text>
                             </View>
-                            <View style={{ flex: 1, flexDirection: 'column' }}>
-                                <View style={{ flexDirection: 'row', height: '25%', borderBottomWidth: 1, alignItems: 'center', paddingLeft: 5 }}>
-                                    <Text style={{ width: 60 }}>등록번호</Text>
-                                    <Text>123-45-67890 (임시)</Text>
+                            <View style={styles.supplierRow}>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={styles.supplierLabelText}>상 호</Text>
+                                    <Text style={{ fontSize: 9 }}>은성 일렉콤</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', height: '25%', borderBottomWidth: 1, alignItems: 'center', paddingLeft: 5 }}>
-                                    <Text style={{ width: 60 }}>상호</Text>
-                                    <Text style={{ flex: 1 }}>QOU Systems</Text>
-                                    <Text style={{ width: 40 }}>성명</Text>
-                                    <Text style={{ flex: 1 }}>홍길동  (인)</Text>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 1, borderLeftStyle: 'solid', borderLeftColor: '#000', height: '100%', paddingLeft: 8 }}>
+                                    <Text style={{ width: 40, fontSize: 8.5, fontWeight: 'bold' }}>대표자</Text>
+                                    <Text style={{ fontSize: 9 }}>임인걸</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', height: '25%', borderBottomWidth: 1, alignItems: 'center', paddingLeft: 5 }}>
-                                    <Text style={{ width: 60 }}>주소</Text>
-                                    <Text>서울시 강남구 테헤란로 123</Text>
+                            </View>
+                            <View style={styles.supplierRow}>
+                                <Text style={styles.supplierLabelText}>사업장주소</Text>
+                                <Text style={{ fontSize: 8.5 }}>인천광역시 서구 원창로 61-11</Text>
+                            </View>
+                            <View style={styles.supplierRow}>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={styles.supplierLabelText}>업 태</Text>
+                                    <Text style={{ fontSize: 9 }}>제조</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', height: '25%', alignItems: 'center', paddingLeft: 5 }}>
-                                    <Text style={{ width: 60 }}>업태</Text>
-                                    <Text style={{ flex: 1 }}>서비스</Text>
-                                    <Text style={{ width: 40 }}>종목</Text>
-                                    <Text style={{ flex: 1 }}>SW개발</Text>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 1, borderLeftStyle: 'solid', borderLeftColor: '#000', height: '100%', paddingLeft: 8 }}>
+                                    <Text style={{ width: 40, fontSize: 8.5, fontWeight: 'bold' }}>종 목</Text>
+                                    <Text style={{ fontSize: 9 }}>전자부품</Text>
                                 </View>
+                            </View>
+                            <View style={[styles.supplierRow, { borderBottomWidth: 0 }]}>
+                                <Text style={styles.supplierLabelText}>연 락 처</Text>
+                                <Text style={{ fontSize: 9 }}>Tel. 032-582-8715</Text>
                             </View>
                         </View>
                     </View>
-                </View>
-
-                {/* Total Summary Bar */}
-                <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderColor: 'black', marginBottom: 10, paddingBottom: 5, justifyContent: 'space-between' }}>
-                    <Text>합계금액 : 일금 {new Intl.NumberFormat('ko-KR').format(total)}원정 (Please check implementation of hangul numbers if needed)</Text>
-                    <Text>(\ {new Intl.NumberFormat('ko-KR').format(total)})</Text>
                 </View>
 
                 {/* Items Table */}
                 <View style={styles.table}>
-                    {/* Header */}
-                    <View style={[styles.tableRow, styles.tableHeader]}>
-                        <View style={[styles.tableCol, { width: '25%' }]}>
-                            <Text>품명</Text>
-                        </View>
-                        <View style={[styles.tableCol, { width: '25%' }]}>
-                            <Text>공정</Text>
-                        </View>
-                        <View style={[styles.tableCol, { width: '10%' }]}>
-                            <Text>수량</Text>
-                        </View>
-                        <View style={[styles.tableCol, { width: '15%' }]}>
-                            <Text>단가</Text>
-                        </View>
-                        <View style={[styles.tableCol, { width: '15%' }]}>
-                            <Text>금액</Text>
-                        </View>
-                        <View style={[styles.tableCol, { width: '10%' }]}>
-                            <Text>비고</Text>
-                        </View>
+                    <View style={styles.tableHeader}>
+                        <View style={[styles.tableCell, { width: '25%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>품 명</Text></View>
+                        <View style={[styles.tableCell, { width: '20%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>규 격</Text></View>
+                        <View style={[styles.tableCell, { width: '10%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>수량</Text></View>
+                        <View style={[styles.tableCell, { width: '15%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>단가(원)</Text></View>
+                        <View style={[styles.tableCell, { width: '15%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>금액(원)</Text></View>
+                        <View style={[styles.tableCell, { width: '15%' }]}><Text style={{ textAlign: 'center', fontWeight: 'bold' }}>비 고</Text></View>
                     </View>
 
-                    {/* Rows */}
                     {quote.items.map((item, index) => {
                         const spanInfo = itemSpans[index];
                         const amount = item.qty * (item.unitPrice || 0);
+                        const isLastItem = index === quote.items.length - 1;
 
                         return (
                             <View key={item.id} style={styles.tableRow}>
-                                {/* Name Column - Handle Merging */}
-                                <View style={[styles.tableCol, { width: '25%', borderBottomWidth: spanInfo.isFirst && spanInfo.rowSpan > 1 ? 0 : 1 }]}>
-                                    {spanInfo.isFirst ? <Text>{item.name}</Text> : null}
-                                    {/* If not first, we render nothing (empty), but the cell border handling is tricky.
-                                Use a white box overlay? Or just logic.
-                                If it's part of a span but not first, the top border should be 0.
-                                Actually borderTopWidth: 0 on all cells is default, they use borderBottom.
-                                So if we want to merge vertically:
-                                Row 1: Draw text. borderBottom = 0 if span > 1.
-                                Row 2: Draw empty. borderBottom = 0 if it's not the last one.
-                                Let's simplify.
-                            */}
+                                <View style={[
+                                    styles.tableCell,
+                                    {
+                                        width: '25%',
+                                        borderBottomWidth: (!isLastItem && !spanInfo.isLastInSpan) ? 0 : 1
+                                    }
+                                ]}>
+                                    {spanInfo.isFirst ? <Text style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.name}</Text> : null}
                                 </View>
-
-                                {/* Process */}
-                                <View style={[styles.tableCol, { width: '25%' }]}>
-                                    <Text>{item.process}</Text>
+                                <View style={[styles.tableCell, { width: '20%' }]}>
+                                    <Text style={{ textAlign: 'center' }}>{item.process}</Text>
                                 </View>
-                                {/* Qty */}
-                                <View style={[styles.tableCol, { width: '10%', textAlign: 'center' }]}>
-                                    <Text>{item.qty}</Text>
+                                <View style={[styles.tableCell, { width: '10%' }]}>
+                                    <Text style={{ textAlign: 'center' }}>{item.qty}</Text>
                                 </View>
-                                {/* Unit Price */}
-                                <View style={[styles.tableCol, { width: '15%', textAlign: 'right' }]}>
-                                    <Text>{item.unitPrice ? item.unitPrice.toLocaleString() : ''}</Text>
+                                <View style={[styles.tableCell, { width: '15%' }]}>
+                                    <Text style={{ textAlign: 'right' }}>{item.unitPrice ? item.unitPrice.toLocaleString() : '0'}</Text>
                                 </View>
-                                {/* Amount */}
-                                <View style={[styles.tableCol, { width: '15%', textAlign: 'right' }]}>
-                                    <Text>{amount.toLocaleString()}</Text>
+                                <View style={[styles.tableCell, { width: '15%' }]}>
+                                    <Text style={{ textAlign: 'right', fontWeight: 'bold' }}>{amount.toLocaleString()}</Text>
                                 </View>
-                                {/* Note */}
-                                <View style={[styles.tableCol, { width: '10%' }]}>
-                                    <Text>{item.note}</Text>
+                                <View style={[styles.tableCell, { width: '15%' }]}>
+                                    <Text style={{ fontSize: 7, textAlign: 'center' }}>{item.note || ''}</Text>
                                 </View>
                             </View>
                         );
                     })}
                 </View>
 
-                {/* Footer Totals */}
-                <View style={{ marginTop: 20, alignSelf: 'flex-end', width: '40%' }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
-                        <Text>소계</Text>
-                        <Text>{totalAmount.toLocaleString()}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
-                        <Text>부가세</Text>
-                        <Text>{vat.toLocaleString()}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingTop: 5, fontWeight: 'bold' }}>
-                        <Text>합계</Text>
-                        <Text>{total.toLocaleString()}</Text>
+                {/* Totals Summary */}
+                <View style={styles.footerContainer}>
+                    <View style={styles.totalsTable}>
+                        <View style={styles.totalsRow}>
+                            <Text style={styles.totalsLabel}>공급가액(원)</Text>
+                            <Text style={styles.totalsValue}>{totalAmount.toLocaleString()}</Text>
+                        </View>
+                        <View style={styles.totalsRow}>
+                            <Text style={styles.totalsLabel}>부 가 세(원)</Text>
+                            <Text style={styles.totalsValue}>{vat.toLocaleString()}</Text>
+                        </View>
+                        <View style={styles.totalsRow}>
+                            <Text style={[styles.totalsLabel, { fontSize: 10 }]}>합  계(원)</Text>
+                            <Text style={[styles.totalsValue, { fontSize: 10, fontWeight: 'bold' }]}>{total.toLocaleString()}</Text>
+                        </View>
                     </View>
                 </View>
 
+                {/* Notes */}
+                <View style={{ marginTop: 40 }}>
+                    <Text style={{ fontSize: 9, marginBottom: 4 }}>* 메탈마스크 개당 110,000원 입니다.</Text>
+                    <Text style={{ fontSize: 9, marginBottom: 4 }}>* 메탈마스크 프레임은 대여 기준입니다.</Text>
+                    <Text style={{ fontSize: 9 }}>* 추후 메탈마스크 폐기시에 프레임은 반납요청드립니다.</Text>
+                </View>
             </Page>
         </Document>
     );
