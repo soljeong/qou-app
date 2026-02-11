@@ -12,8 +12,10 @@ interface QuoteHTMLPreviewProps {
 export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
     const itemSpans = calculateItemSpans(quote.items);
     const totalAmount = quote.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0);
-    const vat = Math.floor(totalAmount * 0.1);
-    const total = totalAmount + vat;
+    const discount = (quote as any).discount || 0;
+    const supplyPrice = totalAmount - discount;
+    const vat = Math.floor(supplyPrice * 0.1);
+    const total = supplyPrice + vat;
 
     return (
         <div className="bg-white p-[40px] shadow-lg w-[210mm] min-h-[297mm] mx-auto text-[10pt] font-['Noto_Sans_KR',_sans-serif] leading-relaxed text-black printable-area box-border">
@@ -128,9 +130,21 @@ export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
             <div className="mt-8 flex justify-end">
                 <table className="w-[35%] border-collapse border border-black text-[10pt] font-medium">
                     <tbody>
+                        {discount > 0 && (
+                            <>
+                                <tr className="h-8">
+                                    <td className="border border-black px-3 py-1 bg-gray-50 font-bold w-1/2">소 계</td>
+                                    <td className="border border-black px-3 py-1 text-right font-bold w-1/2">₩ {totalAmount.toLocaleString()}</td>
+                                </tr>
+                                <tr className="h-8">
+                                    <td className="border border-black px-3 py-1 bg-gray-50 font-bold text-destructive">할 인</td>
+                                    <td className="border border-black px-3 py-1 text-right font-bold text-destructive">₩ -{discount.toLocaleString()}</td>
+                                </tr>
+                            </>
+                        )}
                         <tr className="h-8">
                             <td className="border border-black px-3 py-1 bg-gray-50 font-bold w-1/2">공급가액</td>
-                            <td className="border border-black px-3 py-1 text-right font-bold w-1/2">₩ {totalAmount.toLocaleString()}</td>
+                            <td className="border border-black px-3 py-1 text-right font-bold w-1/2">₩ {supplyPrice.toLocaleString()}</td>
                         </tr>
                         <tr className="h-8">
                             <td className="border border-black px-3 py-1 bg-gray-50 font-bold">부 가 세</td>

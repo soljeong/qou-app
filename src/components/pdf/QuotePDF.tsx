@@ -171,8 +171,10 @@ import { calculateItemSpans } from '@/lib/quote-utils';
 export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recipientContact?: string | null } }) => {
     const itemSpans = calculateItemSpans(quote.items);
     const totalAmount = quote.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0);
-    const vat = Math.floor(totalAmount * 0.1);
-    const total = totalAmount + vat;
+    const discount = (quote as any).discount || 0;
+    const supplyPrice = totalAmount - discount;
+    const vat = Math.floor(supplyPrice * 0.1);
+    const total = supplyPrice + vat;
 
     return (
         <Document title={`견적서_${quote.recipientName}`}>
@@ -289,9 +291,21 @@ export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recip
                 {/* Totals Summary */}
                 <View style={styles.footerContainer}>
                     <View style={styles.totalsTable}>
+                        {discount > 0 && (
+                            <>
+                                <View style={styles.totalsRow}>
+                                    <Text style={styles.totalsLabel}>소      계(원)</Text>
+                                    <Text style={styles.totalsValue}>{totalAmount.toLocaleString()}</Text>
+                                </View>
+                                <View style={styles.totalsRow}>
+                                    <Text style={[styles.totalsLabel, { color: 'red' }]}>할      인(원)</Text>
+                                    <Text style={[styles.totalsValue, { color: 'red' }]}>-{discount.toLocaleString()}</Text>
+                                </View>
+                            </>
+                        )}
                         <View style={styles.totalsRow}>
                             <Text style={styles.totalsLabel}>공급가액(원)</Text>
-                            <Text style={styles.totalsValue}>{totalAmount.toLocaleString()}</Text>
+                            <Text style={styles.totalsValue}>{supplyPrice.toLocaleString()}</Text>
                         </View>
                         <View style={styles.totalsRow}>
                             <Text style={styles.totalsLabel}>부 가 세(원)</Text>

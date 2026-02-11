@@ -32,7 +32,11 @@ import { Quote, QuoteItem } from "@prisma/client"
 import { QuoteHTMLPreview } from "./QuoteHTMLPreview"
 
 interface QuoteFormProps {
-    initialData?: Quote & { items: QuoteItem[] }
+    initialData?: Quote & {
+        items: QuoteItem[],
+        recipientContact?: string | null,
+        discount?: number
+    }
 }
 
 // Internal component for the sticky preview wrapper
@@ -45,11 +49,11 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
         recipientContact: data.recipientContact || "",
         date: data.date || new Date(),
         supplierInfo: {},
-        subtotal: 0,
-        discount: 0,
-        supplyPrice: 0,
-        vat: 0,
-        total: 0,
+        subtotal: data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0),
+        discount: data.discount || 0,
+        supplyPrice: data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0),
+        vat: Math.floor((data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) * 0.1),
+        total: (data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) + Math.floor((data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) * 0.1),
         createdAt: new Date(),
         updatedAt: new Date(),
         items: (data.items || []).map((item, idx) => ({
@@ -99,6 +103,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
             recipientName: initialData.recipientName,
             recipientContact: initialData.recipientContact || "",
             date: new Date(initialData.date),
+            discount: initialData.discount ?? 0,
             items: initialData.items.map(item => ({
                 name: item.name,
                 process: item.process || "",
@@ -109,6 +114,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
         } : {
             recipientName: "",
             recipientContact: "",
+            discount: 0,
             items: defaultItems,
             date: new Date(),
         },
@@ -141,10 +147,12 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
         const amount = (item.qty || 0) * (item.unitPrice || 0)
         return sum + amount
     }, 0)
-    const vat = Math.floor(totalAmount * 0.1)
-    const grandTotal = totalAmount + vat
+    const discount = form.watch("discount") || 0
+    const supplyPrice = totalAmount - discount
+    const vat = Math.floor(supplyPrice * 0.1)
+    const grandTotal = supplyPrice + vat
 
-    async function onSubmit(data: QuoteFormValues) {
+    const onSubmit = async (data: QuoteFormValues) => {
         setIsSubmitting(true)
         try {
             let result;
@@ -172,7 +180,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
             {/* Left Column: Form */}
             <div className="flex-1 min-w-0">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <FormField
                                 control={form.control}
@@ -451,8 +459,34 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                             <div className="flex justify-end mt-4">
                                 <div className="w-1/2 md:w-1/3 bg-muted p-4 rounded-lg space-y-2">
                                     <div className="flex justify-between">
-                                        <span>공급가액</span>
+                                        <span>소계</span>
                                         <span>{totalAmount.toLocaleString()} 원</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-destructive font-medium">할인</span>
+                                        <div className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name="discount"
+                                                render={({ field }) => (
+                                                    <FormItem className="m-0">
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                {...field}
+                                                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                className="w-24 h-7 text-right p-1 text-xs"
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <span className="text-sm">원</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between font-semibold">
+                                        <span>공급가액</span>
+                                        <span>{supplyPrice.toLocaleString()} 원</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>부가세 (10%)</span>
