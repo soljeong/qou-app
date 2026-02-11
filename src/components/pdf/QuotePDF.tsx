@@ -170,7 +170,7 @@ import { calculateItemSpans } from '@/lib/quote-utils';
 
 export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recipientContact?: string | null } }) => {
     const itemSpans = calculateItemSpans(quote.items);
-    const totalAmount = quote.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0);
+    const totalAmount = quote.items.reduce((sum, item) => sum + (item.amount || 0), 0);
     const discount = (quote as any).discount || 0;
     const supplyPrice = totalAmount - discount;
     const vat = Math.floor(supplyPrice * 0.1);
@@ -254,7 +254,7 @@ export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recip
 
                     {quote.items.map((item, index) => {
                         const spanInfo = itemSpans[index];
-                        const amount = item.qty * (item.unitPrice || 0);
+                        const amount = item.amount || 0;
                         const isLastItem = index === quote.items.length - 1;
 
                         return (
@@ -275,7 +275,9 @@ export const QuotePDF = ({ quote }: { quote: Quote & { items: QuoteItem[], recip
                                     <Text style={{ textAlign: 'center' }}>{item.qty}</Text>
                                 </View>
                                 <View style={[styles.tableCell, { width: '15%' }]}>
-                                    <Text style={{ textAlign: 'right' }}>{item.unitPrice ? item.unitPrice.toLocaleString() : '0'}</Text>
+                                    <Text style={{ textAlign: 'right' }}>
+                                        {item.unitPrice !== null ? item.unitPrice.toLocaleString() : 'PP'}
+                                    </Text>
                                 </View>
                                 <View style={[styles.tableCell, { width: '15%' }]}>
                                     <Text style={{ textAlign: 'right', fontWeight: 'bold' }}>{amount.toLocaleString()}</Text>

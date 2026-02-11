@@ -11,7 +11,7 @@ interface QuoteHTMLPreviewProps {
 
 export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
     const itemSpans = calculateItemSpans(quote.items);
-    const totalAmount = quote.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0);
+    const totalAmount = quote.items.reduce((sum, item) => sum + (item.amount || 0), 0);
     const discount = (quote as any).discount || 0;
     const supplyPrice = totalAmount - discount;
     const vat = Math.floor(supplyPrice * 0.1);
@@ -96,7 +96,7 @@ export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
                 </div>
                 {quote.items.map((item, index) => {
                     const spanInfo = itemSpans[index];
-                    const amount = item.qty * (item.unitPrice || 0);
+                    const amount = item.amount || 0;
                     const isLastItem = index === quote.items.length - 1;
 
                     return (
@@ -113,7 +113,7 @@ export const QuoteHTMLPreview = ({ quote }: QuoteHTMLPreviewProps) => {
                             <div className="w-[20%] border-r border-b border-black flex items-center p-2">{item.process}</div>
                             <div className="w-[10%] border-r border-b border-black flex items-center justify-center p-2">{item.qty}</div>
                             <div className="w-[15%] border-r border-b border-black flex items-center justify-end p-2 px-3 text-right">
-                                ₩ {item.unitPrice?.toLocaleString()}
+                                {item.unitPrice !== null ? `₩ ${item.unitPrice.toLocaleString()}` : 'PP'}
                             </div>
                             <div className="w-[15%] border-r border-b border-black flex items-center justify-end p-2 px-3 text-right font-bold">
                                 ₩ {amount.toLocaleString()}

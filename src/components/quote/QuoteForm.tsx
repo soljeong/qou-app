@@ -49,11 +49,11 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
         recipientContact: data.recipientContact || "",
         date: data.date || new Date(),
         supplierInfo: {},
-        subtotal: data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0),
+        subtotal: data.items.reduce((sum, item) => sum + (item.amount || 0), 0),
         discount: data.discount || 0,
-        supplyPrice: data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0),
-        vat: Math.floor((data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) * 0.1),
-        total: (data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) + Math.floor((data.items.reduce((sum, item) => sum + (item.qty * (item.unitPrice || 0)), 0) - (data.discount || 0)) * 0.1),
+        supplyPrice: data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0),
+        vat: Math.floor((data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) * 0.1),
+        total: (data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) + Math.floor((data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) * 0.1),
         createdAt: new Date(),
         updatedAt: new Date(),
         items: (data.items || []).map((item, idx) => ({
@@ -64,7 +64,7 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
             qty: item.qty,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             unitPrice: (item.unitPrice as any) ?? null,
-            amount: (item.qty || 0) * (item.unitPrice || 0),
+            amount: item.amount || 0,
             note: item.note || null,
             order: idx
         }))
@@ -94,7 +94,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const defaultItems = [
-        { name: "", process: "", qty: 1, unitPrice: 0, note: "" }
+        { name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" }
     ]
 
     const form = useForm<QuoteFormValues>({
@@ -109,13 +109,14 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                 process: item.process || "",
                 qty: item.qty,
                 unitPrice: item.unitPrice,
+                amount: item.amount,
                 note: item.note || ""
             }))
         } : {
             recipientName: "",
             recipientContact: "",
             discount: 0,
-            items: defaultItems,
+            items: defaultItems.map(item => ({ ...item, amount: 0 })),
             date: new Date(),
         },
     })
@@ -260,7 +261,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => append({ name: "", process: "", qty: 1, unitPrice: 0, note: "" })}
+                                    onClick={() => append({ name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" })}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     품목 추가
@@ -279,7 +280,9 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                 </div>
                                 {fields.map((field, index) => {
                                     const currentItem = items[index] || {}
-                                    const amount = (currentItem.qty || 0) * (currentItem.unitPrice || 0)
+                                    const amount = currentItem.unitPrice !== null
+                                        ? (currentItem.qty || 0) * (currentItem.unitPrice || 0)
+                                        : (currentItem.amount || 0)
 
                                     const fieldSequence = ['name', 'process', 'qty', 'unitPrice', 'note'] as const;
                                     type FieldKey = typeof fieldSequence[number];
@@ -300,7 +303,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
 
                                             // Handle row creation if needed
                                             if (targetRowIndex >= fields.length) {
-                                                append({ name: "", process: "", qty: 1, unitPrice: 0, note: "" });
+                                                append({ name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" });
                                             }
 
                                             rowCells.forEach((cellValue, colOffset) => {
@@ -323,6 +326,15 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
 
                                                     // @ts-ignore - dynamic key assignment
                                                     form.setValue(`items.${targetRowIndex}.${fieldKey}`, value);
+
+                                                    // Sync amount if qty or unitPrice changed and unitPrice is not null
+                                                    if (fieldKey === 'qty' || fieldKey === 'unitPrice') {
+                                                        const q = fieldKey === 'qty' ? value as number : form.getValues(`items.${targetRowIndex}.qty`);
+                                                        const p = fieldKey === 'unitPrice' ? value as number | null : form.getValues(`items.${targetRowIndex}.unitPrice`);
+                                                        if (p !== null && p !== undefined) {
+                                                            form.setValue(`items.${targetRowIndex}.amount`, q * p);
+                                                        }
+                                                    }
                                                 }
                                             });
                                         });
@@ -379,7 +391,15 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                                 <Input
                                                                     type="number"
                                                                     {...field}
-                                                                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                                    onChange={e => {
+                                                                        const val = parseFloat(e.target.value) || 0
+                                                                        field.onChange(val)
+                                                                        // Sync amount if unitPrice is not null
+                                                                        const up = form.getValues(`items.${index}.unitPrice`)
+                                                                        if (up !== null) {
+                                                                            form.setValue(`items.${index}.amount`, val * (up || 0))
+                                                                        }
+                                                                    }}
                                                                     onPaste={handlePaste('qty')}
                                                                     className="text-center"
                                                                 />
@@ -404,6 +424,11 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                                     onChange={e => {
                                                                         const val = e.target.value === '' ? null : parseFloat(e.target.value)
                                                                         field.onChange(val)
+                                                                        // Sync amount if not null
+                                                                        if (val !== null) {
+                                                                            const q = form.getValues(`items.${index}.qty`) || 0
+                                                                            form.setValue(`items.${index}.amount`, q * val)
+                                                                        }
                                                                     }}
                                                                     onPaste={handlePaste('unitPrice')}
                                                                     placeholder="단가 (0 or Empty)"
@@ -415,9 +440,30 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                     )}
                                                 />
                                             </div>
-                                            {/* Amount (Read Only) */}
-                                            <div className="col-span-2 text-right pr-2 font-medium">
-                                                {amount.toLocaleString()}
+                                            {/* Amount */}
+                                            <div className="col-span-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`items.${index}.amount`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number"
+                                                                    {...field}
+                                                                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                    disabled={items[index]?.unitPrice !== null}
+                                                                    placeholder="금액"
+                                                                    className={cn(
+                                                                        "text-right font-medium",
+                                                                        items[index]?.unitPrice !== null && "bg-muted"
+                                                                    )}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
                                             </div>
                                             {/* Note */}
                                             <div className="col-span-1">
