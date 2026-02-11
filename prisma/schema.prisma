@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quote {
+  id          String   @id @default(uuid())
+  quoteNo     String   @unique // ES-YYMM-MMSEQ-YEARSEQ
+  date        DateTime
+  
+  // Recipient Info
+  recipientName String
+  
+  // Supplier Info (JSON or separate table, keeping simple for now)
+  supplierInfo Json
+
+  // Totals
+  subtotal    Float
+  discount    Float    @default(0)
+  supplyPrice Float
+  vat         Float
+  total       Float
+
+  items       QuoteItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuoteItem {
+  id        String @id @default(uuid())
+  quoteId   String
+  quote     Quote  @relation(fields: [quoteId], references: [id])
+  
+  name      String // Poom-myung
+  process   String // Gong-jeong (Process) instead of Spec
+  qty       Int
+  unitPrice Float? // Null if 'Separate Quote', 0 if free
+  amount    Float
+  note      String?
+  
+  order     Int    // Update order
+}
