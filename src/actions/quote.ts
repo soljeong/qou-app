@@ -6,6 +6,13 @@ import { revalidatePath } from 'next/cache'
 export async function getQuotes() {
     try {
         const quotes = await prisma.quote.findMany({
+            include: {
+                items: {
+                    orderBy: {
+                        order: 'asc'
+                    }
+                }
+            },
             orderBy: {
                 createdAt: 'desc',
             },

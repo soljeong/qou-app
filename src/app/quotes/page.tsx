@@ -2,7 +2,7 @@ import { getQuotes } from '@/actions/quote'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import QuoteTable from '@/components/quote/QuoteTable'
+import QuoteListSplitView from '@/components/quote/QuoteListSplitView'
 
 export default async function QuoteListPage() {
     const quotes = await getQuotes()
@@ -18,7 +18,7 @@ export default async function QuoteListPage() {
                 </Link>
             </div>
 
-            <QuoteTable quotes={quotes} />
+            <QuoteListSplitView quotes={quotes as any} />
         </div>
     )
 }
