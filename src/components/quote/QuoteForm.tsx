@@ -273,6 +273,53 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                     const currentItem = items[index] || {}
                                     const amount = (currentItem.qty || 0) * (currentItem.unitPrice || 0)
 
+                                    const fieldSequence = ['name', 'process', 'qty', 'unitPrice', 'note'] as const;
+                                    type FieldKey = typeof fieldSequence[number];
+
+                                    const handlePaste = (startField: FieldKey) => (e: React.ClipboardEvent<HTMLInputElement>) => {
+                                        const pasteData = e.clipboardData.getData('text');
+                                        if (!pasteData.includes('\t') && !pasteData.includes('\n')) {
+                                            return; // Let default paste handle single cell
+                                        }
+
+                                        e.preventDefault();
+                                        const lines = pasteData.replace(/\r\n/g, '\n').split('\n');
+                                        const rows = lines.filter(line => line.length > 0).map(row => row.split('\t'));
+                                        const startFieldIndex = fieldSequence.indexOf(startField);
+
+                                        rows.forEach((rowCells, rowOffset) => {
+                                            const targetRowIndex = index + rowOffset;
+
+                                            // Handle row creation if needed
+                                            if (targetRowIndex >= fields.length) {
+                                                append({ name: "", process: "", qty: 1, unitPrice: 0, note: "" });
+                                            }
+
+                                            rowCells.forEach((cellValue, colOffset) => {
+                                                const currentFieldIndex = startFieldIndex + colOffset;
+                                                if (currentFieldIndex < fieldSequence.length) {
+                                                    const fieldKey = fieldSequence[currentFieldIndex];
+                                                    let value: string | number | null = cellValue.trim();
+
+                                                    if (fieldKey === 'qty') {
+                                                        const parsed = parseInt(value.replace(/,/g, ''));
+                                                        value = isNaN(parsed) ? 1 : parsed;
+                                                    } else if (fieldKey === 'unitPrice') {
+                                                        if (value === '') {
+                                                            value = null;
+                                                        } else {
+                                                            const parsed = parseFloat(value.replace(/,/g, ''));
+                                                            value = isNaN(parsed) ? 0 : parsed;
+                                                        }
+                                                    }
+
+                                                    // @ts-ignore - dynamic key assignment
+                                                    form.setValue(`items.${targetRowIndex}.${fieldKey}`, value);
+                                                }
+                                            });
+                                        });
+                                    };
+
                                     return (
                                         <div key={field.id} className="grid grid-cols-12 gap-2 p-2 items-center border-t">
                                             {/* Name */}
@@ -283,7 +330,11 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormControl>
-                                                                <Input {...field} placeholder="품명" />
+                                                                <Input
+                                                                    {...field}
+                                                                    placeholder="품명"
+                                                                    onPaste={handlePaste('name')}
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -298,7 +349,11 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormControl>
-                                                                <Input {...field} placeholder="공정" />
+                                                                <Input
+                                                                    {...field}
+                                                                    placeholder="공정"
+                                                                    onPaste={handlePaste('process')}
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -317,6 +372,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                                     type="number"
                                                                     {...field}
                                                                     onChange={e => field.onChange(parseFloat(e.target.value))}
+                                                                    onPaste={handlePaste('qty')}
                                                                     className="text-center"
                                                                 />
                                                             </FormControl>
@@ -341,6 +397,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                                         const val = e.target.value === '' ? null : parseFloat(e.target.value)
                                                                         field.onChange(val)
                                                                     }}
+                                                                    onPaste={handlePaste('unitPrice')}
                                                                     placeholder="단가 (0 or Empty)"
                                                                     className="text-right"
                                                                 />
@@ -362,7 +419,11 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormControl>
-                                                                <Input {...field} placeholder="비고" />
+                                                                <Input
+                                                                    {...field}
+                                                                    placeholder="비고"
+                                                                    onPaste={handlePaste('note')}
+                                                                />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
