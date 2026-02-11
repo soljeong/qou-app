@@ -42,37 +42,10 @@ interface QuoteFormProps {
 // Internal component for the sticky preview wrapper
 const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
     const handleDownloadHtmlPdf = async () => {
-        const element = document.getElementById('quote-preview-content');
-        if (!element) return;
-
         try {
-            // Dynamic imports to avoid SSR issues
-            const { toPng } = await import('html-to-image');
-            const { jsPDF } = await import('jspdf');
-
-            // 1. Capture element as PNG with higher quality (scale: 2)
-            const dataUrl = await toPng(element, {
-                quality: 1.0,
-                pixelRatio: 2,
-                backgroundColor: '#ffffff',
-                // Important: Ensure the element is fully rendered. html-to-image does this well with Noto Sans KR.
-            });
-
-            // 2. Create jsPDF instance (A4 size: 210mm x 297mm)
-            const pdf = new jsPDF('p', 'mm', 'a4');
-
-            // 3. Add the image to the PDF
-            // The image should fill the A4 page
-            const imgProps = pdf.getImageProperties(dataUrl);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-            // 4. Save the PDF
-            pdf.save(`견적서_${data.recipientName}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+            const { exportElementAsPdf } = await import('@/lib/pdf-export');
+            await exportElementAsPdf('quote-preview-content', '견적서', data.recipientName);
         } catch (error) {
-            console.error('Failed to generate PDF:', error);
             alert('PDF 생성 중 오류가 발생했습니다.');
         }
     };
