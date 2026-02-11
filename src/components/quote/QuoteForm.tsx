@@ -30,6 +30,8 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect, useMemo } from "react"
 import { Quote, QuoteItem } from "@prisma/client"
 import { QuoteHTMLPreview } from "./QuoteHTMLPreview"
+import { QuoteHTMLPreviewModern } from "./QuoteHTMLPreviewModern"
+import { QuoteHTMLPreviewCompact } from "./QuoteHTMLPreviewCompact"
 
 interface QuoteFormProps {
     initialData?: Quote & {
@@ -40,7 +42,9 @@ interface QuoteFormProps {
 }
 
 // Internal component for the sticky preview wrapper
-const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
+const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, initialQuoteNo?: string }) => {
+    const [template, setTemplate] = useState<'classic' | 'modern' | 'compact'>('classic');
+
     const handleDownloadHtmlPdf = async () => {
         try {
             const { exportElementAsPdf } = await import('@/lib/pdf-export');
@@ -53,7 +57,7 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
     // Map form values to Quote object structure expected by QuoteHTMLPreview
     const previewQuote: Quote & { items: QuoteItem[] } = useMemo(() => ({
         id: "preview",
-        quoteNo: "PREVIEW-" + format(new Date(), 'yyMM'),
+        quoteNo: initialQuoteNo || ("PREVIEW-" + format(new Date(), 'yyMM')),
         recipientName: data.recipientName || "수신처 미입력",
         recipientContact: data.recipientContact || "",
         date: data.date || new Date(),
@@ -77,14 +81,45 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
             note: item.note || null,
             order: idx
         }))
-    }), [data]);
+    }), [data, initialQuoteNo]);
 
     return (
         <div className="h-[calc(100vh-120px)] border rounded-lg overflow-hidden bg-gray-100 shadow-sm sticky top-6 flex flex-col">
             <div className="bg-white border-b p-3 flex justify-between items-center shrink-0">
-                <span className="font-semibold flex items-center text-sm">
-                    <FileText className="mr-2 h-4 w-4" /> 실시간 미리보기 (HTML)
-                </span>
+                <div className="flex flex-col gap-1">
+                    <span className="font-semibold flex items-center text-sm">
+                        <FileText className="mr-2 h-4 w-4" /> 실시간 미리보기 (HTML)
+                    </span>
+                    <div className="flex bg-slate-100 p-1 rounded-md w-fit">
+                        <button
+                            onClick={() => setTemplate('classic')}
+                            className={cn(
+                                "px-3 py-1 text-[11px] font-bold rounded transition-all",
+                                template === 'classic' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            전통형
+                        </button>
+                        <button
+                            onClick={() => setTemplate('modern')}
+                            className={cn(
+                                "px-3 py-1 text-[11px] font-bold rounded transition-all",
+                                template === 'modern' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            현대형
+                        </button>
+                        <button
+                            onClick={() => setTemplate('compact')}
+                            className={cn(
+                                "px-3 py-1 text-[11px] font-bold rounded transition-all",
+                                template === 'compact' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            실무형
+                        </button>
+                    </div>
+                </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
@@ -97,8 +132,14 @@ const QuotePreviewWrapper = ({ data }: { data: QuoteFormValues }) => {
                 </div>
             </div>
             <div className="flex-1 overflow-auto p-4 bg-gray-200 flex justify-center items-start">
-                <div className="origin-top scale-[0.6] sm:scale-[0.7] md:scale-[0.8] lg:scale-[0.5] xl:scale-[0.6] 2xl:scale-[0.75]">
-                    <QuoteHTMLPreview quote={previewQuote} />
+                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] lg:scale-[0.43] xl:scale-[0.5] 2xl:scale-[0.65]">
+                    {template === 'classic' ? (
+                        <QuoteHTMLPreview quote={previewQuote} />
+                    ) : template === 'modern' ? (
+                        <QuoteHTMLPreviewModern quote={previewQuote} />
+                    ) : (
+                        <QuoteHTMLPreviewCompact quote={previewQuote} />
+                    )}
                 </div>
             </div>
         </div>
@@ -580,7 +621,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
 
             {/* Right Column: Preview */}
             <div className="hidden lg:block w-1/2 max-w-[800px]">
-                <QuotePreviewWrapper data={previewData} />
+                <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} />
             </div>
         </div>
     )
