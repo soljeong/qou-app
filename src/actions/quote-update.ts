@@ -6,7 +6,7 @@ import { QuoteFormValues } from '@/lib/validations/quote'
 
 export async function updateQuote(id: string, data: QuoteFormValues) {
     try {
-        const { recipientName, recipientContact, date, items, discount: inputDiscount } = data
+        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
 
         // Calculate totals
         const subtotal = items.reduce((sum: number, item) => sum + (item.amount || 0), 0)
@@ -24,6 +24,7 @@ export async function updateQuote(id: string, data: QuoteFormValues) {
                     date: new Date(date),
                     recipientName,
                     recipientContact,
+                    notes,
                     subtotal,
                     discount,
                     supplyPrice,

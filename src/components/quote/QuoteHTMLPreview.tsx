@@ -4,7 +4,7 @@ import { calculateItemSpans } from '@/lib/quote-utils';
 import { format } from 'date-fns';
 
 interface QuoteHTMLPreviewProps {
-    quote: Quote & { items: QuoteItem[], recipientContact?: string | null };
+    quote: Quote & { items: QuoteItem[], recipientContact?: string | null, notes?: string | null };
 }
 
 export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps>(({ quote }, ref) => {
@@ -180,7 +180,13 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
             </div>
 
             {/* Footer Notes (Placeholder matching image) */}
-            <div className="mt-12 text-[9pt] space-y-1 font-medium italic opacity-80">
+            <div className="mt-12 text-[9pt] space-y-1 font-medium italic">
+                {quote.notes && (
+                    <div className="mb-4 not-italic font-bold text-slate-700 whitespace-pre-wrap">
+                        {quote.notes}
+                        <div className="mt-2 border-b border-gray-300 w-1/4" />
+                    </div>
+                )}
                 <div>** 메탈마스크 개당 110,000원 입니다.</div>
                 <div>** 메탈마스크 프레임은 대여 기준입니다.</div>
                 <div>** 추후 메탈마스크 폐기시에 프레임은 반납요청드립니다.</div>

@@ -23,6 +23,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { Textarea } from "@/components/ui/textarea"
 import { quoteSchema, QuoteFormValues } from "@/lib/validations/quote"
 import { createQuote } from "@/actions/quote"
 import { updateQuote } from "@/actions/quote-update"
@@ -64,6 +65,7 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
         quoteNo: initialQuoteNo || ("PREVIEW-" + format(new Date(), 'yyMM')),
         recipientName: data.recipientName || "수신처 미입력",
         recipientContact: data.recipientContact || "",
+        notes: data.notes || "",
         date: data.date || new Date(),
         supplierInfo: {},
         subtotal: data.items.reduce((sum, item) => sum + (item.amount || 0), 0),
@@ -569,62 +571,92 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                     )
                                 })}
                             </div>
+                        </div>
 
-                            {/* Totals Summary */}
-                            <div className="flex justify-end mt-4">
-                                <div className="w-1/2 md:w-1/3 bg-muted p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>소계</span>
-                                        <span>{totalAmount.toLocaleString()} 원</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-1">
-                                        <span className="text-destructive font-medium">할인</span>
-                                        <div className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name="discount"
-                                                render={({ field }) => (
-                                                    <FormItem className="m-0">
-                                                        <FormControl>
+                        {/* Quote Notes (New) */}
+                        <div className="mt-8 border-t pt-6">
+                            <FormField
+                                control={form.control}
+                                name="notes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-sm font-bold flex items-center gap-2 mb-2">
+                                            견적서 메모 (Footnote)
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                {...field}
+                                                placeholder="견적서 하단에 표시될 추가 메모를 입력하세요 (전통형 템플릿 하단에 출력됩니다)"
+                                                className="min-h-[120px] resize-none bg-white font-mono text-[13px]"
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {/* Totals Summary */}
+                        <div className="flex justify-end mt-8">
+                            <div className="w-full md:w-1/2 lg:w-3/5 bg-slate-50 border p-5 rounded-xl space-y-3 shadow-sm">
+                                <div className="flex justify-between text-slate-600">
+                                    <span>품목 합계 (소계)</span>
+                                    <span className="font-medium">{totalAmount.toLocaleString()} 원</span>
+                                </div>
+                                <div className="flex justify-between items-center py-1">
+                                    <span className="text-destructive font-bold flex items-center gap-1">
+                                        특별 할인
+                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <FormField
+                                            control={form.control}
+                                            name="discount"
+                                            render={({ field }) => (
+                                                <FormItem className="m-0">
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">₩</span>
                                                             <Input
                                                                 type="number"
                                                                 {...field}
                                                                 onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                                                                className="w-24 h-7 text-right p-1 text-xs"
+                                                                className="w-36 h-9 text-right pl-7 font-bold text-slate-700 bg-white"
                                                             />
-                                                        </FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <span className="text-sm">원</span>
-                                        </div>
+                                                        </div>
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <span className="text-sm font-bold text-slate-500">원</span>
                                     </div>
-                                    <div className="flex justify-between font-semibold">
-                                        <span>공급가액</span>
-                                        <span>{supplyPrice.toLocaleString()} 원</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>부가세 (10%)</span>
-                                        <span>{vat.toLocaleString()} 원</span>
-                                    </div>
-                                    <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-300">
-                                        <span>합계</span>
-                                        <span>{grandTotal.toLocaleString()} 원</span>
-                                    </div>
+                                </div>
+                                <div className="pt-2 border-t border-slate-200" />
+                                <div className="flex justify-between font-bold text-slate-700">
+                                    <span>공급가액</span>
+                                    <span>{supplyPrice.toLocaleString()} 원</span>
+                                </div>
+                                <div className="flex justify-between text-slate-500 text-[13px]">
+                                    <span>부가세 (VAT 10%)</span>
+                                    <span>{vat.toLocaleString()} 원</span>
+                                </div>
+                                <div className="flex justify-between font-black text-xl pt-4 border-t-2 border-slate-800 text-slate-900">
+                                    <span>최종 합계</span>
+                                    <span>{grandTotal.toLocaleString()} 원</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center pt-8">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => router.push('/quotes')}
+                                className="text-slate-500 hover:text-slate-800"
                             >
                                 목록으로 돌아가기
                             </Button>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? "저장 중..." : "견적서 저장"}
+                            <Button type="submit" disabled={isSubmitting} className="px-8 h-11 font-bold text-base bg-slate-900">
+                                {isSubmitting ? "저장 중..." : "견적서 저장 및 확정"}
                             </Button>
                         </div>
                     </form>
@@ -635,6 +667,6 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
             <div className="hidden lg:block w-1/2 max-w-[800px]">
                 <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} />
             </div>
-        </div>
+        </div >
     )
 }

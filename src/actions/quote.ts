@@ -28,7 +28,7 @@ import { QuoteFormValues } from '@/lib/validations/quote'
 
 export async function createQuote(data: QuoteFormValues) {
     try {
-        const { recipientName, recipientContact, date, items, discount: inputDiscount } = data
+        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
 
         const now = new Date()
         const year = now.getFullYear().toString().slice(2)
@@ -70,6 +70,7 @@ export async function createQuote(data: QuoteFormValues) {
                 date: new Date(date),
                 recipientName,
                 recipientContact,
+                notes,
                 supplierInfo: {},
                 subtotal,
                 discount,
