@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
 
 import { format } from "date-fns"
-import { CalendarIcon, Plus, Trash2, FileText } from "lucide-react"
+import { CalendarIcon, Plus, Trash2, FileText, ArrowLeft, Download, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
@@ -44,13 +44,17 @@ interface QuoteFormProps {
 // Internal component for the sticky preview wrapper
 const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, initialQuoteNo?: string }) => {
     const [template, setTemplate] = useState<'classic' | 'modern' | 'compact'>('classic');
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownloadHtmlPdf = async () => {
+        setIsDownloading(true);
         try {
             const { exportElementAsPdf } = await import('@/lib/pdf-export');
             await exportElementAsPdf('quote-preview-content', '견적서', data.recipientName);
         } catch (error) {
             alert('PDF 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -70,7 +74,7 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
         createdAt: new Date(),
         updatedAt: new Date(),
         items: (data.items || []).map((item, idx) => ({
-            id: `preview-item-${idx}`,
+            id: `preview - item - ${idx} `,
             quoteId: "preview",
             name: item.name,
             process: item.process || "",
@@ -125,9 +129,17 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
                         variant="outline"
                         size="sm"
                         onClick={handleDownloadHtmlPdf}
-                        className="h-8 text-xs font-bold bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                        disabled={isDownloading}
+                        className="h-8 text-xs font-bold bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 disabled:opacity-70"
                     >
-                        HTML PDF 다운로드
+                        {isDownloading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                다운로드 중...
+                            </>
+                        ) : (
+                            "HTML PDF 다운로드"
+                        )}
                     </Button>
                 </div>
             </div>
@@ -382,7 +394,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                                                     }
 
                                                     // @ts-ignore - dynamic key assignment
-                                                    form.setValue(`items.${targetRowIndex}.${fieldKey}`, value);
+                                                    form.setValue(`items.${targetRowIndex}.${fieldKey} `, value);
 
                                                     // Sync amount if qty or unitPrice changed and unitPrice is not null
                                                     if (fieldKey === 'qty' || fieldKey === 'unitPrice') {
