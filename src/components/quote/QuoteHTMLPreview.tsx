@@ -62,9 +62,16 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
                                 <span className="w-20 font-bold shrink-0">상 호</span>
                                 <span>은성 일렉콤</span>
                             </div>
-                            <div className="flex flex-1 items-center px-4 h-full">
+                            <div className="flex flex-1 items-center px-4 h-full relative">
                                 <span className="w-16 font-bold shrink-0">대표자명</span>
                                 <span>임인걸</span>
+                                {/* Seal image overlapping */}
+                                <img
+                                    src="/images/seal.jpeg"
+                                    alt="직인"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-12 opacity-90 mix-blend-multiply pointer-events-none"
+                                    style={{ transform: 'translateY(-10%) translateX(10px)' }}
+                                />
                             </div>
                         </div>
                         <div className="flex h-1/5 border-b border-black items-center px-4">
@@ -93,12 +100,12 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
             <table className="w-full table-fixed border-collapse border border-black text-sm mb-6 classic-table">
                 <thead>
                     <tr className="bg-gray-100 font-bold border-b border-black text-center h-10">
-                        <th className="w-[25%] border-r border-black font-bold">품 명</th>
-                        <th className="w-[20%] border-r border-black font-bold">규 격</th>
-                        <th className="w-[10%] border-r border-black font-bold text-center">수량</th>
-                        <th className="w-[15%] border-r border-black font-bold text-center">단 가</th>
-                        <th className="w-[15%] border-r border-black font-bold text-center">금 액</th>
-                        <th className="w-[15%] border-black font-bold text-center">비 고</th>
+                        <th className="w-[30%] border-r border-black font-bold">품 명</th>
+                        <th className="w-[12%] border-r border-black font-bold">규 격</th>
+                        <th className="w-[8%] border-r border-black font-bold text-center">수량</th>
+                        <th className="w-[18%] border-r border-black font-bold text-center">단 가</th>
+                        <th className="w-[22%] border-r border-black font-bold text-center">금 액</th>
+                        <th className="w-[10%] border-black font-bold text-center">비 고</th>
                     </tr>
                 </thead>
                 <tbody>
