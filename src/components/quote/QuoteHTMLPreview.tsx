@@ -23,6 +23,9 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
         >
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+                .classic-table th, .classic-table td {
+                    border: 1px solid #000;
+                }
             `}</style>
 
             {/* Header */}
@@ -87,46 +90,55 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
             </div>
 
             {/* Items Table */}
-            <div className="border-x border-t border-black text-sm">
-                <div className="flex bg-gray-100 font-bold border-b border-black text-center h-10 items-center">
-                    <div className="w-[25%] border-r border-black">품 명</div>
-                    <div className="w-[20%] border-r border-black">규 격</div>
-                    <div className="w-[10%] border-r border-black">수량</div>
-                    <div className="w-[15%] border-r border-black">단 가</div>
-                    <div className="w-[15%] border-r border-black">금 액</div>
-                    <div className="w-[15%]">비 고</div>
-                </div>
-                {quote.items.map((item, index) => {
-                    const spanInfo = itemSpans[index];
-                    const amount = item.amount || 0;
-                    const isLastItem = index === quote.items.length - 1;
+            <table className="w-full table-fixed border-collapse border border-black text-sm mb-6 classic-table">
+                <thead>
+                    <tr className="bg-gray-100 font-bold border-b border-black text-center h-10">
+                        <th className="w-[25%] border-r border-black font-bold">품 명</th>
+                        <th className="w-[20%] border-r border-black font-bold">규 격</th>
+                        <th className="w-[10%] border-r border-black font-bold text-center">수량</th>
+                        <th className="w-[15%] border-r border-black font-bold text-center">단 가</th>
+                        <th className="w-[15%] border-r border-black font-bold text-center">금 액</th>
+                        <th className="w-[15%] border-black font-bold text-center">비 고</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {quote.items.map((item, index) => {
+                        const spanInfo = itemSpans[index];
+                        const amount = item.amount || 0;
+                        const isFirstInSpan = spanInfo.isFirst;
 
-                    return (
-                        <div key={item.id} className="flex border-black items-stretch min-h-[40px]">
-                            {spanInfo.isFirst ? (
-                                <div
-                                    className={`w-[25%] border-r border-black flex items-center justify-center p-2 font-bold ${(!isLastItem && !spanInfo.isLastInSpan) ? '' : 'border-b'
-                                        }`}
-                                    style={{ height: `${spanInfo.rowSpan * 40}px` }} // Apply height based on rowSpan
-                                >
-                                    {item.name}
-                                </div>
-                            ) : null}
-                            <div className="w-[20%] border-r border-b border-black flex items-center p-2">{item.process}</div>
-                            <div className="w-[10%] border-r border-b border-black flex items-center justify-center p-2">{item.qty}</div>
-                            <div className="w-[15%] border-r border-b border-black flex items-center justify-end p-2 px-3 text-right">
-                                {item.unitPrice !== null ? `₩ ${item.unitPrice.toLocaleString()}` : 'PP'}
-                            </div>
-                            <div className="w-[15%] border-r border-b border-black flex items-center justify-end p-2 px-3 text-right font-bold">
-                                ₩ {amount.toLocaleString()}
-                            </div>
-                            <div className="w-[15%] border-b border-black flex items-center justify-center p-2 text-xs text-center">
-                                {item.note}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        return (
+                            <tr key={item.id} className="h-10 border-b border-black">
+                                {isFirstInSpan && (
+                                    <td
+                                        className="px-2 align-middle overflow-hidden border-r border-black font-bold text-center"
+                                        rowSpan={spanInfo.rowSpan}
+                                    >
+                                        <div className="break-all leading-tight" title={item.name}>
+                                            {item.name}
+                                        </div>
+                                    </td>
+                                )}
+                                <td className="px-2 align-middle border-r border-black truncate">
+                                    {item.process}
+                                </td>
+                                <td className="px-1 align-middle text-center border-r border-black">
+                                    {item.qty}
+                                </td>
+                                <td className="px-3 align-middle text-right border-r border-black whitespace-nowrap">
+                                    {item.unitPrice !== null ? `₩ ${item.unitPrice.toLocaleString()}` : 'PP'}
+                                </td>
+                                <td className="px-3 align-middle text-right font-bold border-r border-black whitespace-nowrap">
+                                    ₩ {amount.toLocaleString()}
+                                </td>
+                                <td className="px-2 align-middle text-center text-xs border-black overflow-hidden">
+                                    <div className="truncate">{item.note}</div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
 
             {/* Totals Summary */}
             <div className="mt-8 flex justify-end">
@@ -162,7 +174,7 @@ export const QuoteHTMLPreview = forwardRef<HTMLDivElement, QuoteHTMLPreviewProps
 
             {/* Footer Notes (Placeholder matching image) */}
             <div className="mt-12 text-[9pt] space-y-1 font-medium italic opacity-80">
-                <div>** 메탈마스크 개당 110,000원 입니다..</div>
+                <div>** 메탈마스크 개당 110,000원 입니다.</div>
                 <div>** 메탈마스크 프레임은 대여 기준입니다.</div>
                 <div>** 추후 메탈마스크 폐기시에 프레임은 반납요청드립니다.</div>
             </div>
