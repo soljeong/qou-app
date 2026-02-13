@@ -8,13 +8,12 @@ export function Header() {
                 <div className="flex items-center gap-3">
                     <Link href="/" className="flex items-center gap-3">
                         <Image
-                            src="/logo.svg"
+                            src="/logo_w.png"
                             alt="Logo"
-                            width={32}
+                            width={198}
                             height={32}
-                            className="text-blue-600 dark:text-blue-400"
+                            className="dark:invert-0 invert"
                         />
-                        <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-slate-50">Qou App</span>
                     </Link>
                 </div>
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400">
