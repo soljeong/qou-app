@@ -15,7 +15,7 @@ function excelDateToJSDate(serial: number) {
 async function main() {
     console.log('Start seeding from Excel...')
 
-    const filePath = path.resolve(__dirname, '../../기존파일/견적서_앱시트.xlsx')
+    const filePath = path.resolve(__dirname, '../견적서_앱시트.xlsx')
     const workbook = xlsx.readFile(filePath)
 
     // Load sheets
