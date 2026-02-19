@@ -21,7 +21,7 @@ export default async function EditQuotePage({ params }: Props) {
     return (
         <div className="container mx-auto py-10">
             <h1 className="text-3xl font-bold tracking-tight mb-8">견적서 수정</h1>
-            <QuoteForm initialData={quote} />
+            <QuoteForm initialData={quote} now={new Date()} />
         </div>
     )
 }

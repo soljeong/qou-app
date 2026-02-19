@@ -51,10 +51,11 @@ interface QuoteFormProps {
         recipientContact?: string | null,
         discount?: number
     }
+    now: Date | string
 }
 
 // Internal component for the sticky preview wrapper
-const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, initialQuoteNo?: string }) => {
+const QuotePreviewWrapper = ({ data, initialQuoteNo, now }: { data: QuoteFormValues, initialQuoteNo?: string, now: Date }) => {
     const [template, setTemplate] = useState<'classic' | 'modern' | 'compact'>('classic');
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -73,19 +74,19 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
     // Map form values to Quote object structure expected by QuoteHTMLPreview
     const previewQuote: Quote & { items: QuoteItem[] } = useMemo(() => ({
         id: "preview",
-        quoteNo: initialQuoteNo || ("PREVIEW-" + format(new Date(), 'yyMM')),
+        quoteNo: initialQuoteNo || ("PREVIEW-" + format(now, 'yyMM')),
         recipientName: data.recipientName || "수신처 미입력",
         recipientContact: data.recipientContact || "",
         notes: data.notes || "",
-        date: data.date || new Date(),
+        date: data.date || now,
         supplierInfo: {},
         subtotal: data.items.reduce((sum, item) => sum + (item.amount || 0), 0),
         discount: data.discount || 0,
         supplyPrice: data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0),
         vat: Math.floor((data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) * 0.1),
         total: (data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) + Math.floor((data.items.reduce((sum, item) => sum + (item.amount || 0), 0) - (data.discount || 0)) * 0.1),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         items: (data.items || []).map((item, idx) => ({
             id: `preview - item - ${idx} `,
             quoteId: "preview",
@@ -98,7 +99,7 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
             note: item.note || null,
             order: idx
         }))
-    }), [data, initialQuoteNo]);
+    }), [data, initialQuoteNo, now]);
 
     return (
         <div className="h-[calc(100vh-120px)] border rounded-lg overflow-hidden bg-gray-100 shadow-sm sticky top-6 flex flex-col">
@@ -171,9 +172,12 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
     )
 }
 
-export default function QuoteForm({ initialData }: QuoteFormProps) {
+export default function QuoteForm({ initialData, now }: QuoteFormProps) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Ensure now is a Date object (Next.js serializes dates to strings in props)
+    const effectiveNow = useMemo(() => new Date(now), [now]);
 
     const defaultItems = [
         { name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" }
@@ -199,7 +203,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
             recipientContact: "",
             discount: 0,
             items: defaultItems.map(item => ({ ...item, amount: 0 })),
-            date: new Date(),
+            date: effectiveNow,
         },
     })
 
@@ -712,7 +716,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
 
             {/* Right Column: Preview */}
             <div className="hidden lg:block w-1/2 max-w-[800px]">
-                <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} />
+                <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} now={effectiveNow} />
             </div>
         </div >
     )
