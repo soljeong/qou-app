@@ -25,7 +25,18 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { Textarea } from "@/components/ui/textarea"
 import { quoteSchema, QuoteFormValues } from "@/lib/validations/quote"
-import { createQuote } from "@/actions/quote"
+import { createQuote, deleteQuote } from "@/actions/quote"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { updateQuote } from "@/actions/quote-update"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useMemo } from "react"
@@ -646,15 +657,51 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                             </div>
                         </div>
 
+
                         <div className="flex justify-between items-center pt-8">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => router.push('/quotes')}
-                                className="text-slate-500 hover:text-slate-800"
-                            >
-                                목록으로 돌아가기
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => router.push('/quotes')}
+                                    className="text-slate-500 hover:text-slate-800"
+                                >
+                                    목록으로 돌아가기
+                                </Button>
+                                {initialData && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                삭제
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>견적서를 삭제하시겠습니까?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    이 작업은 되돌릴 수 없습니다. 삭제된 견적서는 복구할 수 없습니다.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>취소</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={async () => {
+                                                        await deleteQuote(initialData.id)
+                                                    }}
+                                                    className="bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                                                >
+                                                    삭제
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                )}
+                            </div>
                             <Button type="submit" disabled={isSubmitting} className="px-8 h-11 font-bold text-base bg-slate-900">
                                 {isSubmitting ? "저장 중..." : "견적서 저장 및 확정"}
                             </Button>

@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export async function getQuotes() {
     try {
@@ -120,4 +121,18 @@ export async function createQuote(data: QuoteFormValues) {
         console.error('Failed to create quote:', error)
         return { success: false, error: 'Failed to create quote' }
     }
+}
+
+export async function deleteQuote(id: string) {
+    try {
+        await prisma.quote.delete({
+            where: { id }
+        })
+        revalidatePath('/quotes')
+    } catch (error) {
+        console.error('Failed to delete quote:', error)
+        throw new Error('Failed to delete quote')
+    }
+    // redirect must be called outside of try-catch block
+    redirect('/quotes')
 }

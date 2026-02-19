@@ -45,7 +45,7 @@ model Quote {
 model QuoteItem {
   id        String @id @default(uuid())
   quoteId   String
-  quote     Quote  @relation(fields: [quoteId], references: [id])
+  quote     Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   
   name      String // Poom-myung
   process   String // Gong-jeong (Process) instead of Spec
