@@ -1,10 +1,16 @@
 'use server'
 
+import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { QuoteFormValues } from '@/lib/validations/quote'
 
 export async function updateQuote(id: string, data: QuoteFormValues) {
+    const session = await auth()
+    if (!session?.user) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
     try {
         const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
 

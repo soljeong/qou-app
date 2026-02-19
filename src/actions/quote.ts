@@ -1,10 +1,21 @@
 'use server'
 
+import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { QuoteFormValues } from '@/lib/validations/quote'
+
+async function assertAuthenticated() {
+    const session = await auth()
+    if (!session?.user) {
+        throw new Error('Unauthorized')
+    }
+}
 
 export async function getQuotes() {
+    await assertAuthenticated()
+
     try {
         const quotes = await prisma.quote.findMany({
             include: {
@@ -25,15 +36,17 @@ export async function getQuotes() {
     }
 }
 
-import { QuoteFormValues } from '@/lib/validations/quote'
-
 export async function createQuote(data: QuoteFormValues) {
+    const session = await auth()
+    if (!session?.user) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
     try {
         const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
 
         const quoteDate = new Date(date)
         const year = quoteDate.getFullYear().toString().slice(2)
-        const fullYear = quoteDate.getFullYear()
         const month = (quoteDate.getMonth() + 1).toString().padStart(2, '0')
         const prefix = `ES-${year}${month}`
         const yearPrefix = `ES-${year}`
@@ -124,6 +137,8 @@ export async function createQuote(data: QuoteFormValues) {
 }
 
 export async function deleteQuote(id: string) {
+    await assertAuthenticated()
+
     try {
         await prisma.quote.delete({
             where: { id }
