@@ -32,6 +32,12 @@ export async function Header() {
           >
             Quotes
           </Link>
+          <Link
+            href="/production"
+            className="transition-colors hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            Production
+          </Link>
         </nav>
 
         <div className="flex items-center gap-4">

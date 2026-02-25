@@ -57,3 +57,72 @@ model QuoteItem {
   
   order     Int    // Update order
 }
+
+model FileSnapshot {
+  id               String   @id @default(uuid())
+  fileName         String
+  filePath         String?
+  year             Int?
+  currentWw        String?
+  writtenAt        String?
+  writtenDatetime  DateTime?
+  revNumber        Int?
+  fileModifiedAt   DateTime?
+  importedAt       DateTime @default(now())
+  rowCount         Int?
+
+  orders           ProductionOrder[]
+
+  @@unique([fileName, fileModifiedAt])
+}
+
+model ProductionOrder {
+  id                String   @id @default(uuid())
+  snapshotId        String
+  snapshot          FileSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  rowNumber         Int?
+
+  weekNo            String?
+  weekNoInt         Int?
+  rowType           String?
+
+  clientName        String?
+  modelName         String?
+  quantityRaw       String?
+  quantityInt       Int?
+
+  orderDateRaw      String?
+  orderDate         DateTime?  @db.Date
+  orderMonth        Int?
+  orderSeq          String?
+  deadlineRaw       String?
+  deadlineDate      DateTime?  @db.Date
+
+  versionMgmt       String?
+  line              String?
+  boardSide         String?
+  postProcess       String?
+  rohs              String?
+
+  pcbScheduleRaw    String?
+  pcbScheduleDate   DateTime?  @db.Date
+  materialInRaw     String?
+  materialInDate    DateTime?  @db.Date
+  workOrderRaw      String?
+  workOrderDate     DateTime?  @db.Date
+  materialOutRaw    String?
+  materialOutDate   DateTime?  @db.Date
+  pcbVendor         String?
+  estimateStatus    String?
+  maskStatus        String?
+
+  note              String?
+
+  cellBgColorB      String?
+  cellBgColorC      String?
+
+  @@index([snapshotId])
+  @@index([clientName])
+  @@index([modelName])
+  @@index([weekNoInt])
+}
