@@ -45,11 +45,8 @@
 ### 설치
 
 ```bash
-# 의존성 설치
+# 의존성 설치 (postinstall 스크립트가 prisma generate를 자동 실행합니다)
 npm install
-
-# Prisma 클라이언트 생성
-npx prisma generate
 ```
 
 ### 환경 변수 설정
@@ -104,7 +101,25 @@ npm run dev
 ## 배포
 
 Docker 컨테이너로 패키징하여 Google Cloud Run에 배포합니다.
-자세한 배포 절차는 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)를 참고하세요.
+
+### Docker 빌드
+
+```bash
+docker build -t qou-app .
+```
+
+### 런타임 환경 변수
+
+Docker/Cloud Run에서 다음 환경변수를 설정해야 합니다:
+
+| 환경변수 | 설명 |
+| :--- | :--- |
+| `DATABASE_URL` | PostgreSQL pooled 연결 URL |
+| `AUTH_GOOGLE_ID` | Google OAuth 클라이언트 ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth 클라이언트 시크릿 |
+| `AUTH_SECRET` | NextAuth 시크릿 키 |
+
+> Dockerfile에 `AUTH_TRUST_HOST=true`와 `TZ=Asia/Seoul`이 이미 설정되어 있습니다.
 
 ## 프로젝트 구조
 

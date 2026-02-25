@@ -94,3 +94,12 @@ AUTH_SECRET            # NextAuth 시크릿
 - Prisma binaryTargets에 `linux-musl-openssl-3.0.x` 포함 (Alpine Linux용)
 - Prisma DB 변경은 `db push` 대신 `migrate dev` / `migrate deploy` 사용 (마이그레이션 기반 운영)
 - Neon DB는 pooled URL(앱 런타임)과 direct URL(마이그레이션)을 분리 사용
+
+## 배포 주의사항 (Docker / Cloud Run)
+
+- `auth.ts`에서 env var를 top-level throw로 검증하지 않는다 (빌드 시 env var 없이도 빌드 가능해야 함)
+- Dockerfile deps 스테이지에서 `npm ci` 후 반드시 `npx prisma generate` 실행
+- `AUTH_TRUST_HOST=true` 설정 필수 (Cloud Run reverse proxy 뒤에서 OAuth 작동)
+- `TZ=Asia/Seoul` 설정 (서버/클라이언트 날짜 불일치 방지)
+- `.dockerignore`에 `.env`, `.env.*` 포함하여 비밀 정보 Docker 이미지 유출 방지
+- `postinstall` 스크립트로 `prisma generate` 자동 실행 (`npm install` 시)
