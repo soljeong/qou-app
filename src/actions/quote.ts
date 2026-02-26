@@ -7,6 +7,9 @@ import { redirect } from 'next/navigation'
 import { QuoteFormValues } from '@/lib/validations/quote'
 
 async function assertAuthenticated() {
+    if (process.env.NODE_ENV === 'development') {
+        return
+    }
     const session = await auth()
     if (!session?.user) {
         throw new Error('Unauthorized')
@@ -40,9 +43,11 @@ export async function createQuote(
     data: QuoteFormValues,
     extractedImages?: { filePath: string; index: number }[]
 ) {
-    const session = await auth()
-    if (!session?.user) {
-        return { success: false, error: 'Unauthorized' }
+    if (process.env.NODE_ENV !== 'development') {
+        const session = await auth()
+        if (!session?.user) {
+            return { success: false, error: 'Unauthorized' }
+        }
     }
 
     try {
