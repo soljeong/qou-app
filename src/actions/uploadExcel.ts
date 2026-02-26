@@ -2,7 +2,10 @@
 
 import prisma from "@/lib/prisma";
 import * as xlsx from "xlsx";
+import XlsxPopulate from "xlsx-populate";
 import { revalidatePath } from "next/cache";
+
+const EXCEL_PASSWORD = "8715";
 
 export async function uploadProductionPlan(formData: FormData) {
     const file = formData.get("file") as File;
@@ -10,9 +13,10 @@ export async function uploadProductionPlan(formData: FormData) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // NOTE: If the excel is password protected, node 'xlsx' cannot read it natively.
-    // It expects a decrypted file.
-    const workbook = xlsx.read(buffer, { type: "buffer" });
+    // 비밀번호가 걸린 엑셀 파일을 xlsx-populate로 복호화 후 xlsx로 파싱
+    const populated = await XlsxPopulate.fromDataAsync(buffer, { password: EXCEL_PASSWORD });
+    const decryptedBuffer = await populated.outputAsync() as Buffer;
+    const workbook = xlsx.read(decryptedBuffer, { type: "buffer" });
     const sheet = workbook.Sheets["생산 계획"];
     if (!sheet) {
         throw new Error("Sheet '생산 계획' not found.");
