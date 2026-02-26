@@ -194,6 +194,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [excelPreviewHtml, setExcelPreviewHtml] = useState<string | null>(null)
+    const [extractedImages, setExtractedImages] = useState<{ filePath: string; index: number }[]>([])
 
     const defaultItems = [
         { name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" }
@@ -262,7 +263,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
             if (initialData) {
                 result = await updateQuote(initialData.id, data)
             } else {
-                result = await createQuote(data)
+                result = await createQuote(data, extractedImages.length > 0 ? extractedImages : undefined)
             }
 
             if (result.success) {
@@ -302,6 +303,9 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
                     })
                     if (parsed.htmlPreview) {
                         setExcelPreviewHtml(parsed.htmlPreview)
+                    }
+                    if (parsed.extractedImages) {
+                        setExtractedImages(parsed.extractedImages)
                     }
                     setTimeout(() => alert(`엑셀 데이터가 성공적으로 불러와졌습니다.\n미리보기를 통해 확인 후 견적서를 저장해주세요.\n임시 견적번호: ${parsed.quoteNo}`), 300)
                 } catch (e) {

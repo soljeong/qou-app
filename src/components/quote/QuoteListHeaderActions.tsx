@@ -28,7 +28,8 @@ export default function QuoteListHeaderActions() {
                 const draftData = {
                     ...parsed,
                     htmlPreview: result.data.htmlPreview,
-                    excelFilePath: result.data.filePath
+                    excelFilePath: result.data.filePath,
+                    extractedImages: result.data.extractedImages ?? []
                 }
                 sessionStorage.setItem('quoteDraft', JSON.stringify(draftData))
                 router.push('/quotes/new')

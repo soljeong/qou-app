@@ -36,7 +36,10 @@ export async function getQuotes() {
     }
 }
 
-export async function createQuote(data: QuoteFormValues) {
+export async function createQuote(
+    data: QuoteFormValues,
+    extractedImages?: { filePath: string; index: number }[]
+) {
     const session = await auth()
     if (!session?.user) {
         return { success: false, error: 'Unauthorized' }
@@ -126,8 +129,25 @@ export async function createQuote(data: QuoteFormValues) {
                         order: index
                     }))
                 }
-            }
+            },
+            include: { items: { orderBy: { order: 'asc' } } }
         })
+
+        // 이미지를 QuoteItem에 연결 (image.index → item order 매핑)
+        if (extractedImages && extractedImages.length > 0) {
+            const itemsById = Object.fromEntries(quote.items.map(item => [item.order, item.id]))
+            const imageRecords = extractedImages
+                .filter(img => itemsById[img.index] !== undefined)
+                .map(img => ({
+                    quoteItemId: itemsById[img.index],
+                    filePath: img.filePath,
+                    itemIndex: img.index
+                }))
+
+            if (imageRecords.length > 0) {
+                await prisma.quoteImage.createMany({ data: imageRecords })
+            }
+        }
 
         revalidatePath('/quotes')
         return { success: true, quote }

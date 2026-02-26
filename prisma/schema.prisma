@@ -48,15 +48,26 @@ model QuoteItem {
   id        String @id @default(uuid())
   quoteId   String
   quote     Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  
+
   name      String // Poom-myung
   process   String // Gong-jeong (Process) instead of Spec
   qty       Int
   unitPrice Float? // Null if 'Separate Quote', 0 if free
   amount    Float
   note      String?
-  
+
   order     Int    // Update order
+
+  images    QuoteImage[]
+}
+
+model QuoteImage {
+  id          String    @id @default(uuid())
+  quoteItemId String
+  quoteItem   QuoteItem @relation(fields: [quoteItemId], references: [id], onDelete: Cascade)
+  filePath    String
+  itemIndex   Int       // 엑셀 내 이미지 순번 (품목 매핑용)
+  createdAt   DateTime  @default(now())
 }
 
 model FileSnapshot {
