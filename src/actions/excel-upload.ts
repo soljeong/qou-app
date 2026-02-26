@@ -11,7 +11,7 @@ const client = new Anthropic()
 // PNG 바이너리 시그니처로 이미지 추출
 function extractPNGs(buffer: Buffer): Buffer[] {
   const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-  const IEND   = Buffer.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])
+  const IEND = Buffer.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])
   const images: Buffer[] = []
   let pos = 0
   while (pos < buffer.length) {
@@ -29,6 +29,67 @@ function extractPNGs(buffer: Buffer): Buffer[] {
 function extractJSON(text: string): string {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   return match ? match[1].trim() : text.trim()
+}
+
+type JsonObject = Record<string, unknown>
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function parseParsedResponse(value: unknown): { quotes: JsonObject[] } {
+  if (!isJsonObject(value)) {
+    return { quotes: [] }
+  }
+
+  const rawQuotes = value.quotes
+  if (!Array.isArray(rawQuotes)) {
+    return { quotes: [] }
+  }
+
+  const quotes = rawQuotes.filter(isJsonObject)
+  return { quotes }
+}
+
+function toStringOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  return typeof value === 'number' ? value : null
+}
+
+function toDateOrNow(value: unknown): Date {
+  if (typeof value !== 'string') {
+    return new Date()
+  }
+
+  const parsedDate = new Date(value)
+  return Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate
+}
+
+function normalizeItems(items: unknown): {
+  name: string
+  process: string
+  qty: number | null
+  unitPrice: number | null
+  amount: number | null
+  note: string
+}[] {
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items
+    .filter(isJsonObject)
+    .map((item) => ({
+      name: toStringOrEmpty(item.name),
+      process: toStringOrEmpty(item.process),
+      qty: toNumberOrNull(item.qty),
+      unitPrice: toNumberOrNull(item.unitPrice),
+      amount: toNumberOrNull(item.amount),
+      note: toStringOrEmpty(item.note)
+    }))
 }
 
 export async function uploadAndParseExcel(formData: FormData) {
@@ -62,7 +123,7 @@ export async function uploadAndParseExcel(formData: FormData) {
     }
 
     // 시트 CSV 변환 (LLM 입력용)
-    const sheetsText = workbook.SheetNames.map(name => {
+    const sheetsText = workbook.SheetNames.map((name) => {
       const csv = xlsx.utils.sheet_to_csv(workbook.Sheets[name], { blankrows: false })
       return `=== 시트: ${name} ===\n${csv}`
     }).join('\n\n')
@@ -113,24 +174,17 @@ ${sheetsText}
 
     const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonText = extractJSON(rawText)
-    const parsed = JSON.parse(jsonText)
+    const parsed = parseParsedResponse(JSON.parse(jsonText))
 
-    const parsedQuotes = (parsed.quotes ?? []).map((q: any) => ({
-      quoteNo: q.quoteNo ?? '',
-      date: q.date ? new Date(q.date) : new Date(),
-      recipientName: q.recipientName ?? '',
-      recipientContact: q.recipientContact ?? '',
-      notes: q.notes ?? '',
-      discount: typeof q.discount === 'number' ? q.discount : 0,
-      supplierInfo: q.supplierInfo ?? null,
-      items: (q.items ?? []).map((item: any) => ({
-        name: item.name ?? '',
-        process: item.process ?? '',
-        qty: item.qty ?? null,
-        unitPrice: item.unitPrice ?? null,
-        amount: item.amount ?? null,
-        note: item.note ?? ''
-      }))
+    const parsedQuotes = parsed.quotes.map((quote) => ({
+      quoteNo: toStringOrEmpty(quote.quoteNo),
+      date: toDateOrNow(quote.date),
+      recipientName: toStringOrEmpty(quote.recipientName),
+      recipientContact: toStringOrEmpty(quote.recipientContact),
+      notes: toStringOrEmpty(quote.notes),
+      discount: typeof quote.discount === 'number' ? quote.discount : 0,
+      supplierInfo: quote.supplierInfo ?? null,
+      items: normalizeItems(quote.items)
     }))
 
     // PNG 이미지 추출 및 저장
