@@ -12,7 +12,7 @@ export async function updateQuote(id: string, data: QuoteFormValues) {
     }
 
     try {
-        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
+        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount, excelFilePath } = data
 
         // Calculate totals
         const subtotal = items.reduce((sum: number, item) => sum + (item.amount || 0), 0)
@@ -31,6 +31,7 @@ export async function updateQuote(id: string, data: QuoteFormValues) {
                     recipientName,
                     recipientContact,
                     notes,
+                    excelFilePath,
                     subtotal,
                     discount,
                     supplyPrice,

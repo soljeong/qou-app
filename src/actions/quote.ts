@@ -43,7 +43,7 @@ export async function createQuote(data: QuoteFormValues) {
     }
 
     try {
-        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount } = data
+        const { recipientName, recipientContact, date, items, notes, discount: inputDiscount, excelFilePath } = data
 
         const quoteDate = new Date(date)
         const year = quoteDate.getFullYear().toString().slice(2)
@@ -108,6 +108,7 @@ export async function createQuote(data: QuoteFormValues) {
                 recipientName,
                 recipientContact,
                 notes,
+                excelFilePath,
                 supplierInfo: {},
                 subtotal,
                 discount,

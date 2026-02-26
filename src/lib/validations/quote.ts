@@ -15,6 +15,7 @@ export const quoteSchema = z.object({
     date: z.date(),
     discount: z.number(),
     notes: z.string().optional(),
+    excelFilePath: z.string().optional(),
     items: z.array(quoteItemSchema).min(1, "최소 1개 이상의 품목을 추가해주세요"),
 })
 

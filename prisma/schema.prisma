@@ -38,6 +38,7 @@ model Quote {
 
   items       QuoteItem[]
   notes       String?
+  excelFilePath String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

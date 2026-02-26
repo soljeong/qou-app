@@ -54,8 +54,8 @@ interface QuoteFormProps {
 }
 
 // Internal component for the sticky preview wrapper
-const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, initialQuoteNo?: string }) => {
-    const [template, setTemplate] = useState<'classic' | 'modern' | 'compact'>('classic');
+const QuotePreviewWrapper = ({ data, initialQuoteNo, excelPreviewHtml }: { data: QuoteFormValues, initialQuoteNo?: string, excelPreviewHtml?: string | null }) => {
+    const [template, setTemplate] = useState<'classic' | 'modern' | 'compact' | 'excel'>('classic');
     const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownloadHtmlPdf = async () => {
@@ -77,6 +77,7 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
         recipientName: data.recipientName || "수신처 미입력",
         recipientContact: data.recipientContact || "",
         notes: data.notes || "",
+        excelFilePath: data.excelFilePath || null,
         date: data.date || new Date(),
         supplierInfo: {},
         subtotal: data.items.reduce((sum, item) => sum + (item.amount || 0), 0),
@@ -135,6 +136,17 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
                         >
                             실무형
                         </button>
+                        {excelPreviewHtml && (
+                            <button
+                                onClick={() => setTemplate('excel')}
+                                className={cn(
+                                    "px-3 py-1 text-[11px] font-bold rounded transition-all bg-emerald-50 text-emerald-700 border border-emerald-200 ml-2",
+                                    template === 'excel' ? "bg-emerald-500 text-white shadow-sm border-emerald-600" : "hover:bg-emerald-100"
+                                )}
+                            >
+                                원본 엑셀
+                            </button>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -157,15 +169,22 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
                 </div>
             </div>
             <div className="flex-1 overflow-auto p-4 bg-gray-200 flex justify-center items-start">
-                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] lg:scale-[0.43] xl:scale-[0.5] 2xl:scale-[0.65]">
-                    {template === 'classic' ? (
-                        <QuoteHTMLPreview quote={previewQuote} />
-                    ) : template === 'modern' ? (
-                        <QuoteHTMLPreviewModern quote={previewQuote} />
-                    ) : (
-                        <QuoteHTMLPreviewCompact quote={previewQuote} />
-                    )}
-                </div>
+                {template === 'excel' && excelPreviewHtml ? (
+                    <div
+                        className="bg-white p-4 w-full h-full overflow-auto text-xs [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:p-1 [&_th]:border [&_th]:p-1 [&_th]:bg-slate-100"
+                        dangerouslySetInnerHTML={{ __html: excelPreviewHtml }}
+                    />
+                ) : (
+                    <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] lg:scale-[0.43] xl:scale-[0.5] 2xl:scale-[0.65]">
+                        {template === 'classic' ? (
+                            <QuoteHTMLPreview quote={previewQuote} />
+                        ) : template === 'modern' ? (
+                            <QuoteHTMLPreviewModern quote={previewQuote} />
+                        ) : (
+                            <QuoteHTMLPreviewCompact quote={previewQuote} />
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -174,6 +193,7 @@ const QuotePreviewWrapper = ({ data, initialQuoteNo }: { data: QuoteFormValues, 
 export default function QuoteForm({ initialData }: QuoteFormProps) {
     const router = useRouter()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [excelPreviewHtml, setExcelPreviewHtml] = useState<string | null>(null)
 
     const defaultItems = [
         { name: "", process: "", qty: 1, unitPrice: 0, amount: 0, note: "" }
@@ -258,10 +278,50 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
         }
     }
 
+    useEffect(() => {
+        if (!initialData) {
+            const draftStr = sessionStorage.getItem('quoteDraft')
+            if (draftStr) {
+                try {
+                    const parsed = JSON.parse(draftStr)
+                    form.reset({
+                        recipientName: parsed.recipientName || '',
+                        recipientContact: parsed.recipientContact || '',
+                        date: parsed.date ? new Date(parsed.date) : new Date(),
+                        discount: parsed.discount || 0,
+                        notes: parsed.notes || '',
+                        excelFilePath: parsed.excelFilePath || '',
+                        items: parsed.items && parsed.items.length > 0 ? parsed.items.map((i: any) => ({
+                            name: i.name,
+                            process: i.process,
+                            qty: i.qty || 1,
+                            unitPrice: i.unitPrice ?? null,
+                            amount: i.amount ?? 0,
+                            note: i.note || ''
+                        })) : defaultItems.map(item => ({ ...item, amount: 0 }))
+                    })
+                    if (parsed.htmlPreview) {
+                        setExcelPreviewHtml(parsed.htmlPreview)
+                    }
+                    setTimeout(() => alert(`엑셀 데이터가 성공적으로 불러와졌습니다.\n미리보기를 통해 확인 후 견적서를 저장해주세요.\n임시 견적번호: ${parsed.quoteNo}`), 300)
+                } catch (e) {
+                    console.error('Failed to restore draft', e)
+                } finally {
+                    sessionStorage.removeItem('quoteDraft')
+                }
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData])
     return (
         <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Column: Form */}
             <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                        <FileText className="h-5 w-5 text-blue-500" /> 기본 정보
+                    </h2>
+                </div>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -712,7 +772,7 @@ export default function QuoteForm({ initialData }: QuoteFormProps) {
 
             {/* Right Column: Preview */}
             <div className="hidden lg:block w-1/2 max-w-[800px]">
-                <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} />
+                <QuotePreviewWrapper data={previewData} initialQuoteNo={initialData?.quoteNo} excelPreviewHtml={excelPreviewHtml} />
             </div>
         </div >
     )
