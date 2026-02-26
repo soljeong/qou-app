@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-export default auth((req) => {
+const authMiddleware = auth((req) => {
   if (req.auth) {
     return NextResponse.next();
   }
@@ -12,6 +12,13 @@ export default auth((req) => {
 
   return NextResponse.redirect(loginUrl);
 });
+
+export default function middleware(req: NextRequest) {
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+  return (authMiddleware as (req: NextRequest) => Response)(req);
+}
 
 export const config = {
   matcher: ["/quotes/:path*"],
