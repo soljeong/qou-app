@@ -4,6 +4,9 @@ import prisma from "@/lib/prisma";
 import * as xlsx from "xlsx";
 import XlsxPopulate from "xlsx-populate";
 import { revalidatePath } from "next/cache";
+import fs from "fs/promises";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
 
 const EXCEL_PASSWORD = "8715";
 
@@ -12,6 +15,12 @@ export async function uploadProductionPlan(formData: FormData) {
     if (!file) throw new Error("No file provided");
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadsDir = path.join(process.cwd(), "public", "uploads", "production");
+    await fs.mkdir(uploadsDir, { recursive: true });
+    const fileExt = path.extname(file.name) || ".xlsx";
+    const storedFileName = `${uuidv4()}${fileExt}`;
+    const storedFilePath = path.join(uploadsDir, storedFileName);
+    await fs.writeFile(storedFilePath, buffer);
 
     // 비밀번호가 걸린 엑셀 파일을 xlsx-populate로 복호화 후 xlsx로 파싱
     const populated = await XlsxPopulate.fromDataAsync(buffer, { password: EXCEL_PASSWORD });
@@ -33,6 +42,7 @@ export async function uploadProductionPlan(formData: FormData) {
     const snapshot = await prisma.fileSnapshot.create({
         data: {
             fileName,
+            filePath: `/uploads/production/${storedFileName}`,
             writtenAt: writtenRaw,
             rowCount: data.length - 8,
             currentWw: `ww${new Date().getWeek() || '##'}`, // Fallback
@@ -86,6 +96,7 @@ export async function uploadProductionPlan(formData: FormData) {
     }
 
     revalidatePath("/production");
+    revalidatePath("/production/snapshots");
     return { success: true };
 }
 

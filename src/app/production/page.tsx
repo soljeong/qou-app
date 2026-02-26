@@ -1,12 +1,18 @@
-import { getLatestProductionOrders } from "@/actions/production";
+import { getProductionOrders } from "@/actions/production";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 
-export default async function ProductionPage() {
-    const { snapshot, orders } = await getLatestProductionOrders();
+export default async function ProductionPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ snapshotId?: string }>;
+}) {
+    const params = await searchParams;
+    const selectedSnapshotId = params?.snapshotId;
+    const { snapshot, orders } = await getProductionOrders(selectedSnapshotId);
 
     const getRiskBadge = (versionMgmt: string | null) => {
         if (!versionMgmt) return null;
@@ -16,13 +22,13 @@ export default async function ProductionPage() {
     };
 
     const getStatusRatio = (orders: { line: string | null }[]) => {
-        const totalLines = { "A": 0, "B": 0, "C": 0, "외주": 0, "미배정": 0 };
-        orders.forEach(o => {
-            if (o.line === "A") totalLines["A"]++;
-            else if (o.line === "B") totalLines["B"]++;
-            else if (o.line === "C") totalLines["C"]++;
-            else if (o.line?.includes("외주")) totalLines["외주"]++;
-            else totalLines["미배정"]++;
+        const totalLines = { A: 0, B: 0, C: 0, 외주: 0, 미배정: 0 };
+        orders.forEach((o) => {
+            if (o.line === "A") totalLines.A++;
+            else if (o.line === "B") totalLines.B++;
+            else if (o.line === "C") totalLines.C++;
+            else if (o.line?.includes("외주")) totalLines.외주++;
+            else totalLines.미배정++;
         });
         return totalLines;
     };
@@ -31,23 +37,29 @@ export default async function ProductionPage() {
 
     return (
         <div className="container mx-auto px-6 py-8">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-8 gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        생산 계획 현황
-                    </h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">생산 계획 현황</h1>
                     {snapshot && (
                         <p className="text-sm text-slate-500 mt-2">
-                            최신 스냅샷: {snapshot.currentWw} ({snapshot.writtenAt})
+                            조회 중인 스냅샷: {snapshot.currentWw} ({snapshot.writtenAt || "작성일 미기재"})
                         </p>
                     )}
                 </div>
-                <Link
-                    href="/production/upload"
-                    className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-sm"
-                >
-                    계획서 업로드 (Excel)
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link
+                        href="/production/snapshots"
+                        className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                        스냅샷 목록 관리
+                    </Link>
+                    <Link
+                        href="/production/upload"
+                        className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-sm"
+                    >
+                        계획서 업로드 (Excel)
+                    </Link>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
@@ -64,7 +76,7 @@ export default async function ProductionPage() {
                         <CardTitle className="text-sm font-medium text-slate-500">A 라인</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats["A"]}</div>
+                        <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.A}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -72,7 +84,7 @@ export default async function ProductionPage() {
                         <CardTitle className="text-sm font-medium text-slate-500">B 라인</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{stats["B"]}</div>
+                        <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{stats.B}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -80,7 +92,7 @@ export default async function ProductionPage() {
                         <CardTitle className="text-sm font-medium text-slate-500">C 라인</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{stats["C"]}</div>
+                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{stats.C}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -125,16 +137,19 @@ export default async function ProductionPage() {
                                         <TableCell className="text-slate-500">
                                             {order.deadlineDate ? format(new Date(order.deadlineDate), "MM-dd") : order.deadlineRaw}
                                         </TableCell>
-                                        <TableCell>
-                                            {getRiskBadge(order.versionMgmt)}
-                                        </TableCell>
+                                        <TableCell>{getRiskBadge(order.versionMgmt)}</TableCell>
                                         <TableCell>
                                             {order.line ? (
                                                 <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300">
                                                     {order.line}
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="secondary" className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">대기</Badge>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                                >
+                                                    대기
+                                                </Badge>
                                             )}
                                         </TableCell>
                                         <TableCell>
@@ -142,7 +157,12 @@ export default async function ProductionPage() {
                                                 {order.note ? (
                                                     <span className="flex items-center gap-1.5 text-sm text-slate-500">
                                                         <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                            />
                                                         </svg>
                                                         {order.note}
                                                     </span>
@@ -156,7 +176,6 @@ export default async function ProductionPage() {
                     </Table>
                 </div>
             </Card>
-
         </div>
     );
 }
