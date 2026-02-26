@@ -14,9 +14,16 @@ export async function uploadProductionPlan(formData: FormData) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // 비밀번호가 걸린 엑셀 파일을 xlsx-populate로 복호화 후 xlsx로 파싱
-    const populated = await XlsxPopulate.fromDataAsync(buffer, { password: EXCEL_PASSWORD });
-    const decryptedBuffer = await populated.outputAsync() as Buffer;
-    const workbook = xlsx.read(decryptedBuffer, { type: "buffer" });
+    // 비밀번호가 없는 파일의 경우 xlsx-populate가 오류를 발생시키므로 직접 파싱으로 폴백
+    let workbook: ReturnType<typeof xlsx.read>;
+    try {
+        const populated = await XlsxPopulate.fromDataAsync(buffer, { password: EXCEL_PASSWORD });
+        const decryptedBuffer = await populated.outputAsync() as Buffer;
+        workbook = xlsx.read(decryptedBuffer, { type: "buffer" });
+    } catch (decryptErr) {
+        console.warn("xlsx-populate 복호화 실패, 비밀번호 없이 재시도:", decryptErr);
+        workbook = xlsx.read(buffer, { type: "buffer" });
+    }
     const sheet = workbook.Sheets["생산 계획"];
     if (!sheet) {
         throw new Error("Sheet '생산 계획' not found.");
