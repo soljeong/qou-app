@@ -1,9 +1,7 @@
 import { getProductionOrders } from "@/actions/production";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { ProductionOrdersTable } from "@/components/production-orders-table";
 
 export default async function ProductionPage({
     searchParams,
@@ -14,20 +12,13 @@ export default async function ProductionPage({
     const selectedSnapshotId = params?.snapshotId;
     const { snapshot, orders } = await getProductionOrders(selectedSnapshotId);
 
-    const getRiskBadge = (versionMgmt: string | null) => {
-        if (!versionMgmt) return null;
-        if (versionMgmt === "신규") return <Badge variant="destructive">신규</Badge>;
-        if (versionMgmt.includes("BOM")) return <Badge variant="destructive" className="bg-orange-500">BOM변경</Badge>;
-        return <Badge variant="outline" className="text-slate-500">{versionMgmt}</Badge>;
-    };
-
-    const getStatusRatio = (orders: { line: string | null }[]) => {
+    const getStatusRatio = (targetOrders: { line: string | null }[]) => {
         const totalLines = { A: 0, B: 0, C: 0, 외주: 0, 미배정: 0 };
-        orders.forEach((o) => {
-            if (o.line === "A") totalLines.A++;
-            else if (o.line === "B") totalLines.B++;
-            else if (o.line === "C") totalLines.C++;
-            else if (o.line?.includes("외주")) totalLines.외주++;
+        targetOrders.forEach((order) => {
+            if (order.line === "A") totalLines.A++;
+            else if (order.line === "B") totalLines.B++;
+            else if (order.line === "C") totalLines.C++;
+            else if (order.line?.includes("외주")) totalLines.외주++;
             else totalLines.미배정++;
         });
         return totalLines;
@@ -36,12 +27,12 @@ export default async function ProductionPage({
     const stats = getStatusRatio(orders);
 
     return (
-        <div className="container mx-auto px-6 py-8">
-            <div className="flex justify-between items-center mb-8 gap-4 flex-wrap">
+        <div className="w-full max-w-none px-4 py-8 lg:px-8">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">생산 계획 현황</h1>
                     {snapshot && (
-                        <p className="text-sm text-slate-500 mt-2">
+                        <p className="mt-2 text-sm text-slate-500">
                             조회 중인 스냅샷: {snapshot.currentWw} ({snapshot.writtenAt || "작성일 미기재"})
                         </p>
                     )}
@@ -55,14 +46,14 @@ export default async function ProductionPage({
                     </Link>
                     <Link
                         href="/production/upload"
-                        className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 shadow-sm"
+                        className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
                     >
                         계획서 업로드 (Excel)
                     </Link>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+            <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-5">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-slate-500">미배정(대기)</CardTitle>
@@ -105,77 +96,20 @@ export default async function ProductionPage({
                 </Card>
             </div>
 
-            <Card className="shadow-sm border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-                            <TableRow>
-                                <TableHead className="w-[80px]">주차</TableHead>
-                                <TableHead>고객사</TableHead>
-                                <TableHead>모델명</TableHead>
-                                <TableHead className="text-right">수량</TableHead>
-                                <TableHead>납기일</TableHead>
-                                <TableHead className="w-[120px]">버전 관리</TableHead>
-                                <TableHead>라인배정</TableHead>
-                                <TableHead>특이사항</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {orders.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="text-center py-12 text-slate-500">
-                                        생산 계획 데이터가 없습니다. 우측 상단의 업로드 버튼을 눌러 추가해주세요.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                orders.map((order) => (
-                                    <TableRow key={order.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                                        <TableCell className="font-medium">{order.weekNo}</TableCell>
-                                        <TableCell className="font-semibold text-slate-900 dark:text-white">{order.clientName}</TableCell>
-                                        <TableCell>{order.modelName}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{order.quantityRaw}</TableCell>
-                                        <TableCell className="text-slate-500">
-                                            {order.deadlineDate ? format(new Date(order.deadlineDate), "MM-dd") : order.deadlineRaw}
-                                        </TableCell>
-                                        <TableCell>{getRiskBadge(order.versionMgmt)}</TableCell>
-                                        <TableCell>
-                                            {order.line ? (
-                                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300">
-                                                    {order.line}
-                                                </Badge>
-                                            ) : (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                                                >
-                                                    대기
-                                                </Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="max-w-[200px] truncate" title={order.note || ""}>
-                                                {order.note ? (
-                                                    <span className="flex items-center gap-1.5 text-sm text-slate-500">
-                                                        <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth={2}
-                                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                            />
-                                                        </svg>
-                                                        {order.note}
-                                                    </span>
-                                                ) : null}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </Card>
+            <ProductionOrdersTable
+                orders={orders.map((order) => ({
+                    id: order.id,
+                    weekNo: order.weekNo,
+                    clientName: order.clientName,
+                    modelName: order.modelName,
+                    quantityRaw: order.quantityRaw,
+                    deadlineRaw: order.deadlineRaw,
+                    deadlineDate: order.deadlineDate ? order.deadlineDate.toISOString() : null,
+                    versionMgmt: order.versionMgmt,
+                    line: order.line,
+                    note: order.note,
+                }))}
+            />
         </div>
     );
 }
